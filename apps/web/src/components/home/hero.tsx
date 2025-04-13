@@ -3,7 +3,7 @@ import styles from "./hero.module.css";
 export function Hero() {
   return (
     <section className="w-full h-[581px] relative bg-gradient-to-b from-[#171717] to-[#510000] overflow-hidden">
-      <div className="absolute md:top-10 left-1/2 sm:top-10 -translate-x-1/2   md:left-[50%] lg:top-10 top-10 w-[420px] md:w-[420px] h-[599px] z-0">
+      <div className="absolute md:top-10 left-1/2 sm:top-13  -translate-x-1/2 md:left-[50%] lg:top-10 top-10 w-[490px] md:w-[420px] h-[599px] z-0">
         <img
           src="/kunal-hero.png"
           alt="Kunal Kamra"
@@ -11,10 +11,10 @@ export function Hero() {
         />
       </div>
 
-      <div className="relative z-10 container mx-auto h-full flex items-center">
+      <div className="relative z-10 mt-16 container mx-auto h-full flex items-center">
         <div className="relative w-full max-w-[1200px] mx-auto px-4">
           <div className={`${styles.heroText} pt-8 sm:pt-12 md:pt-16 lg:pt-0`}>
-            <span className="block text-sm sm:text-2xl md:text-3xl lg:text-5xl text-white font-medium lg:leading-10 mb-2 sm:mb-4 md:mb-6">
+            <span className="block text-sm sm:leading-3 sm:text-2xl md:text-3xl lg:text-5xl text-white font-medium lg:leading-10 mb-2 sm:mb-4 md:mb-6">
               welcome to the
             </span>
             <div className="relative">
@@ -60,7 +60,7 @@ export function Hero() {
                 </span>
                 MRA
               </h1>
-              <div className="absolute -bottom-2 sm:-bottom-3 md:-bottom-4 right-0 text-white text-xl sm:text-2xl md:text-3xl lg:text-5xl font-medium">
+              <div className="absolute -bottom-3 sm:-bottom-6 sm:right-1 md:-bottom-8 right-0 text-white text-xl sm:text-2xl md:text-3xl lg:text-5xl font-medium">
                 app
               </div>
             </div>

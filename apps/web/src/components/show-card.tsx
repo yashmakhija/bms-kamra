@@ -28,19 +28,32 @@ export function ShowCard({
 }: ShowCardProps) {
   return (
     <div
-      className={cn("relative cursor-pointer group w-full", className)}
+      className={cn(
+        "relative group w-full shrink-0 cursor-pointer px-2",
+        "sm:min-w-[75vw] md:min-w-[300px] md:w-full md:px-0", // Adjusted width for better mobile view
+        className
+      )}
       {...props}
     >
-      <div className="overflow-hidden rounded-2xl bg-neutral-800 aspect-video">
+      <div className="overflow-hidden rounded-xl bg-neutral-800 aspect-video max-w-[500px] mx-auto">
         <img
           src={image}
           alt={title}
+          width={width || 400}
+          height={height || 225}
           className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
         />
       </div>
-      <h3 className="font-medium text-neutral-50 text-lg leading-tight mt-2">
-        {title}
-      </h3>
+      <div className="mt-3 space-y-1 max-w-[500px] mx-auto">
+        <h3 className="font-medium text-neutral-50 text-base sm:text-lg md:text-lg leading-tight line-clamp-2">
+          {title}
+        </h3>
+        {artist && (
+          <p className="text-neutral-400 text-sm md:text-sm line-clamp-1">
+            {artist}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
