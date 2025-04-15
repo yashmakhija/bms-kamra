@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react";
 import { Show, useShowsStore } from "../../store/shows";
 import { Calendar, Clock, Timer, MapPin } from "lucide-react";
 import { cn } from "@repo/ui/utils";
+import { useNavigate } from "react-router-dom";
 
 // Reusable Components
 interface InfoItemProps {
@@ -126,6 +127,10 @@ export function UpcomingShows({ shows, className }: UpcomingShowsProps) {
   const setShows = useShowsStore((state) => state.setShows);
   const selectShow = useShowsStore((state) => state.selectShow);
   const setLoading = useShowsStore((state) => state.setLoading);
+  const getTicketIdFromShowId = useShowsStore(
+    (state) => state.getTicketIdFromShowId
+  );
+  const navigate = useNavigate();
 
   useEffect(() => {
     setShows(shows);
@@ -136,6 +141,9 @@ export function UpcomingShows({ shows, className }: UpcomingShowsProps) {
     setLoading(true);
     try {
       selectShow(id);
+      // Get the corresponding ticket ID and navigate to it
+      const ticketId = getTicketIdFromShowId(id);
+      navigate(`/tickets/${ticketId}`);
     } catch (error) {
       console.error("Failed to select show:", error);
     } finally {
