@@ -34,7 +34,7 @@ const showToTicketMap = {
   "6": `${ticketData.id}-6`,
 };
 
-export const useShowsStore = create<ShowsState>((set, get) => ({
+export const useShowsStore = create<ShowsState>((set) => ({
   shows: [],
   selectedShowId: null,
   isLoading: false,
