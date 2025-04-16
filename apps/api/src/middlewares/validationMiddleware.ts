@@ -84,3 +84,4 @@ export const accountDeletionValidation = [
     .notEmpty()
     .withMessage("Password cannot be empty"),
 ];
+ 
