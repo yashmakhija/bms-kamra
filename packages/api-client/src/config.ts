@@ -33,7 +33,7 @@ function getApiBaseUrl(): string {
   }
 
   // Default fallback
-  return "http://localhost:3091/api";
+  return "https://8dba-2405-201-682b-39a8-50d8-eea6-c674-2ec3.ngrok-free.app/api";
 }
 
 /**

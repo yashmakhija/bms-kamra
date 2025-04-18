@@ -1,6 +1,7 @@
-import { prisma } from "@repo/database";
+import { prisma, User, Admin } from "@repo/database";
 import { hashPassword, generateOtpCode } from "../utils/auth";
 import { sendOtpSms } from "./twilioService";
+import { AdminRole } from "../types";
 
 export const createUser = async (
   name: string,
@@ -25,17 +26,78 @@ export const createUser = async (
   });
 };
 
-export const findUserByEmail = async (email: string) => {
+export const findUserByEmail = async (
+  email: string
+): Promise<(User & { admin: Admin | null }) | null> => {
   return prisma.user.findUnique({
     where: { email },
+    include: {
+      admin: true,
+    },
   });
 };
 
-export const findUserById = async (id?: string | null) => {
+export const findUserById = async (
+  id?: string | null
+): Promise<(User & { admin: Admin | null }) | null> => {
   if (!id) return null;
 
   return prisma.user.findUnique({
     where: { id },
+    include: {
+      admin: true,
+    },
+  });
+};
+
+// Get user's admin role if exists
+export const getUserAdminRole = async (
+  userId: string
+): Promise<AdminRole | null> => {
+  const admin = await prisma.admin.findUnique({
+    where: { userId },
+  });
+
+  return (admin?.role as AdminRole) || null;
+};
+
+// Check if user has admin privileges
+export const isUserAdmin = async (userId: string): Promise<boolean> => {
+  const admin = await prisma.admin.findUnique({
+    where: { userId },
+  });
+
+  return !!admin;
+};
+
+// Check if user has specific admin role
+export const hasAdminRole = async (
+  userId: string,
+  requiredRole: AdminRole
+): Promise<boolean> => {
+  const admin = await prisma.admin.findUnique({
+    where: { userId },
+  });
+
+  return admin?.role === requiredRole;
+};
+
+// Create a new admin user
+export const createAdminUser = async (
+  userId: string,
+  role: AdminRole
+): Promise<void> => {
+  await prisma.admin.create({
+    data: {
+      userId,
+      role,
+    },
+  });
+
+  // Update the isAdmin flag in the user model for quicker checks
+  await prisma.user.update({
+    where: { id: userId },
+    data: { isAdmin: true },
   });
 };
 
@@ -44,9 +106,12 @@ export const findOrCreateGoogleUser = async (
   name: string | null,
   picture: string | null,
   googleId: string
-) => {
+): Promise<User & { admin: Admin | null }> => {
   let user = await prisma.user.findUnique({
     where: { email },
+    include: {
+      admin: true,
+    },
   });
 
   if (!user) {
@@ -63,6 +128,9 @@ export const findOrCreateGoogleUser = async (
             type: "oauth",
           },
         },
+      },
+      include: {
+        admin: true,
       },
     });
   } else {
@@ -88,9 +156,14 @@ export const findOrCreateGoogleUser = async (
   return user;
 };
 
-export const findOrCreateUserByPhone = async (phone: string) => {
+export const findOrCreateUserByPhone = async (
+  phone: string
+): Promise<User & { admin: Admin | null }> => {
   let user = await prisma.user.findFirst({
     where: { phone },
+    include: {
+      admin: true,
+    },
   });
 
   if (!user) {
@@ -98,6 +171,9 @@ export const findOrCreateUserByPhone = async (phone: string) => {
       data: {
         phone,
         phoneVerified: false,
+      },
+      include: {
+        admin: true,
       },
     });
   }

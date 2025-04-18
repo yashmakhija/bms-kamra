@@ -40,6 +40,16 @@
                   "if (pm.response.code === 200 && pm.response.json().token) {",
                   "    pm.environment.set(\"token\", pm.response.json().token);",
                   "    console.log(\"Token saved to environment\");",
+                  "    ",
+                  "    // Store admin status for later tests",
+                  "    if (pm.response.json().user.isAdmin) {",
+                  "        pm.environment.set(\"isAdmin\", true);",
+                  "        pm.environment.set(\"adminRole\", pm.response.json().user.role);",
+                  "        console.log(\"Admin role saved: \" + pm.response.json().user.role);",
+                  "    } else {",
+                  "        pm.environment.set(\"isAdmin\", false);",
+                  "        pm.environment.unset(\"adminRole\");",
+                  "    }",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -67,6 +77,52 @@
           }
         },
         {
+          "name": "Admin Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 && pm.response.json().token) {",
+                  "    pm.environment.set(\"token\", pm.response.json().token);",
+                  "    console.log(\"Token saved to environment\");",
+                  "    ",
+                  "    // Store admin status for later tests",
+                  "    if (pm.response.json().user.isAdmin) {",
+                  "        pm.environment.set(\"isAdmin\", true);",
+                  "        pm.environment.set(\"adminRole\", pm.response.json().user.role);",
+                  "        console.log(\"Admin role saved: \" + pm.response.json().user.role);",
+                  "    } else {",
+                  "        pm.environment.set(\"isAdmin\", false);",
+                  "        pm.environment.unset(\"adminRole\");",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"AdminPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with admin credentials"
+          }
+        },
+        {
           "name": "Google Login",
           "event": [
             {
@@ -76,6 +132,15 @@
                   "if (pm.response.code === 200 && pm.response.json().token) {",
                   "    pm.environment.set(\"token\", pm.response.json().token);",
                   "    console.log(\"Token saved to environment\");",
+                  "    ",
+                  "    // Store admin status for later tests",
+                  "    if (pm.response.json().user.isAdmin) {",
+                  "        pm.environment.set(\"isAdmin\", true);",
+                  "        pm.environment.set(\"adminRole\", pm.response.json().user.role);",
+                  "    } else {",
+                  "        pm.environment.set(\"isAdmin\", false);",
+                  "        pm.environment.unset(\"adminRole\");",
+                  "    }",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -134,6 +199,15 @@
                   "if (pm.response.code === 200 && pm.response.json().token) {",
                   "    pm.environment.set(\"token\", pm.response.json().token);",
                   "    console.log(\"Token saved to environment\");",
+                  "    ",
+                  "    // Store admin status for later tests",
+                  "    if (pm.response.json().user.isAdmin) {",
+                  "        pm.environment.set(\"isAdmin\", true);",
+                  "        pm.environment.set(\"adminRole\", pm.response.json().user.role);",
+                  "    } else {",
+                  "        pm.environment.set(\"isAdmin\", false);",
+                  "        pm.environment.unset(\"adminRole\");",
+                  "    }",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -264,6 +338,441 @@
       ]
     },
     {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get Admin Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test if user has admin access",
+                  "if (pm.response.code === 403) {",
+                  "    console.log(\"User does not have admin privileges\");",
+                  "}",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    console.log(\"Admin role: \" + pm.response.json().role);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/profile",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "profile"]
+            },
+            "description": "Get admin profile details"
+          }
+        },
+        {
+          "name": "Get All Users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test admin access",
+                  "if (pm.response.code === 403) {",
+                  "    console.log(\"Insufficient permissions - requires SUPER_ADMIN or MANAGER role\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get all users (paginated) - requires SUPER_ADMIN or MANAGER role"
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test admin access",
+                  "if (pm.response.code === 403) {",
+                  "    console.log(\"Insufficient permissions - requires SUPER_ADMIN or MANAGER role\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{userId}}",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "{{userId}}"]
+            },
+            "description": "Get user by ID - requires SUPER_ADMIN or MANAGER role"
+          }
+        },
+        {
+          "name": "Create Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test super admin access",
+                  "if (pm.response.code === 403) {",
+                  "    console.log(\"Insufficient permissions - requires SUPER_ADMIN role\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{userId}}\",\n  \"role\": \"CONTENT_MANAGER\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/create",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "create"]
+            },
+            "description": "Create a new admin with specified role - requires SUPER_ADMIN"
+          }
+        }
+      ],
+      "description": "Admin-only routes that require proper role-based privileges"
+    },
+    {
+      "name": "Shows & Events",
+      "item": [
+        {
+          "name": "Create Show (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const showId = pm.response.json().id;",
+                  "    pm.environment.set(\"showId\", showId);",
+                  "    console.log(\"Created show ID: \" + showId);",
+                  "}",
+                  "",
+                  "if (pm.response.code === 403) {",
+                  "    console.log(\"Insufficient permissions - requires admin role\");",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Test Show\",\n  \"description\": \"A test show created via API\",\n  \"venueId\": \"{{venueId}}\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"duration\": 180,\n  \"bannerImage\": \"https://example.com/images/banner.jpg\",\n  \"startDate\": \"2023-12-01T18:00:00Z\",\n  \"endDate\": \"2023-12-15T22:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/shows",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "shows"]
+            },
+            "description": "Create a new show - requires CONTENT_MANAGER or higher role"
+          }
+        },
+        {
+          "name": "Add Showtime (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showId\": \"{{showId}}\",\n  \"startTime\": \"2023-12-01T18:30:00Z\",\n  \"endTime\": \"2023-12-01T21:30:00Z\",\n  \"availableSeats\": 250\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/shows/showtimes",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "shows", "showtimes"]
+            },
+            "description": "Add a showtime to an existing show - requires CONTENT_MANAGER or higher role"
+          }
+        },
+        {
+          "name": "Add Seat Section (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const sectionId = pm.response.json().id;",
+                  "    pm.environment.set(\"sectionId\", sectionId);",
+                  "    console.log(\"Created section ID: \" + sectionId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showId\": \"{{showId}}\",\n  \"name\": \"Premium\",\n  \"capacity\": 100,\n  \"price\": 1500\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/shows/sections",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "shows", "sections"]
+            },
+            "description": "Add a seat section to a show with pricing - requires CONTENT_MANAGER or higher role"
+          }
+        },
+        {
+          "name": "Get Shows (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/shows?page=1&limit=10",
+              "host": ["{{base_url}}"],
+              "path": ["shows"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get all available shows (public endpoint)"
+          }
+        },
+        {
+          "name": "Get Show Details (Public)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/shows/{{showId}}",
+              "host": ["{{base_url}}"],
+              "path": ["shows", "{{showId}}"]
+            },
+            "description": "Get details for a specific show (public endpoint)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tickets & Bookings",
+      "item": [
+        {
+          "name": "Book Tickets",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const bookingId = pm.response.json().id;",
+                  "    pm.environment.set(\"bookingId\", bookingId);",
+                  "    console.log(\"Created booking ID: \" + bookingId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showtimeId\": \"{{showtimeId}}\",\n  \"sectionId\": \"{{sectionId}}\",\n  \"quantity\": 2\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings",
+              "host": ["{{base_url}}"],
+              "path": ["bookings"]
+            },
+            "description": "Book tickets for a show"
+          }
+        },
+        {
+          "name": "Get User Bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/my-bookings",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "my-bookings"]
+            },
+            "description": "Get all bookings for the current user"
+          }
+        },
+        {
+          "name": "Get Booking Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/{{bookingId}}",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "{{bookingId}}"]
+            },
+            "description": "Get details for a specific booking"
+          }
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/{{bookingId}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["bookings", "{{bookingId}}", "cancel"]
+            },
+            "description": "Cancel a booking"
+          }
+        },
+        {
+          "name": "View All Bookings (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/bookings?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "bookings"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "View all bookings - requires SUPER_ADMIN or MANAGER role"
+          }
+        }
+      ]
+    },
+    {
       "name": "Health Check",
       "request": {
         "method": "GET",
@@ -283,4 +792,3 @@
     }
   ]
 }
- 

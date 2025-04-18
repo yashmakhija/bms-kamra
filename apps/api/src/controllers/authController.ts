@@ -7,6 +7,8 @@ import {
   createOtpCode,
   verifyOtpCode,
   findUserById,
+  getUserAdminRole,
+  isUserAdmin,
 } from "../services/userService";
 import { comparePassword, generateToken } from "../utils/auth";
 import { verifyGoogleToken } from "../services/googleService";
@@ -19,14 +21,12 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
 
-    // Check if required fields are provided
     if (!name || !email || !password) {
       return res
         .status(400)
         .json({ message: "Please provide all required fields" });
     }
 
-    // Check if user already exists
     const existingUser = await findUserByEmail(email);
     if (existingUser) {
       return res
@@ -34,13 +34,10 @@ export const register = async (req: Request, res: Response) => {
         .json({ message: "User with this email already exists" });
     }
 
-    // Create new user
     const user = await createUser(name, email, password);
 
-    // Generate token
-    const token = generateToken(user.id);
+    const token = generateToken(user.id, false, null);
 
-    // Return user info and token
     const response: LoginResponse = {
       user: {
         id: user.id,
@@ -48,6 +45,8 @@ export const register = async (req: Request, res: Response) => {
         email: user.email,
         phone: null,
         image: user.image,
+        isAdmin: false,
+        role: null,
       },
       token,
     };
@@ -66,20 +65,17 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    // Check if required fields are provided
     if (!email || !password) {
       return res
         .status(400)
         .json({ message: "Please provide email and password" });
     }
 
-    // Find user by email
     const user = await findUserByEmail(email);
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Check if user has password (might be registered via social login)
     if (!user.password) {
       return res.status(401).json({
         message:
@@ -87,16 +83,16 @@ export const login = async (req: Request, res: Response) => {
       });
     }
 
-    // Verify password
     const isPasswordValid = await comparePassword(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // Generate token
-    const token = generateToken(user.id);
+    const isAdmin = !!user.admin;
+    const adminRole = user.admin?.role || null;
 
-    // Return user info and token
+    const token = generateToken(user.id, isAdmin, adminRole);
+
     const response: LoginResponse = {
       user: {
         id: user.id,
@@ -104,6 +100,8 @@ export const login = async (req: Request, res: Response) => {
         email: user.email,
         phone: user.phone,
         image: user.image,
+        isAdmin,
+        role: adminRole,
       },
       token,
     };
@@ -141,8 +139,12 @@ export const googleLogin = async (req: Request, res: Response) => {
       googleUser.sub
     );
 
-    // Generate token
-    const token = generateToken(user.id);
+    // Check if user is admin and get role
+    const isAdmin = !!user.admin;
+    const adminRole = user.admin?.role || null;
+
+    // Generate token with admin info if applicable
+    const token = generateToken(user.id, isAdmin, adminRole);
 
     // Return user info and token
     const response: LoginResponse = {
@@ -152,6 +154,8 @@ export const googleLogin = async (req: Request, res: Response) => {
         email: user.email,
         phone: user.phone,
         image: user.image,
+        isAdmin,
+        role: adminRole,
       },
       token,
     };
@@ -225,8 +229,12 @@ export const verifyPhoneOtp = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "User not found" });
     }
 
-    // Generate token
-    const token = generateToken(user.id);
+    // Check if user is admin and get role
+    const isAdmin = !!user.admin;
+    const adminRole = user.admin?.role || null;
+
+    // Generate token with admin info if applicable
+    const token = generateToken(user.id, isAdmin, adminRole);
 
     // Return user info and token
     const response: LoginResponse = {
@@ -236,6 +244,8 @@ export const verifyPhoneOtp = async (req: Request, res: Response) => {
         email: user.email,
         phone: user.phone,
         image: user.image,
+        isAdmin,
+        role: adminRole,
       },
       token,
     };

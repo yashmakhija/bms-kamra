@@ -13,4 +13,27 @@ export const prisma =
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-export * from "@prisma/client";
+// Export all types from Prisma Client
+export * from ".prisma/client";
+
+export type {
+  User,
+  Admin,
+  Account,
+  Session,
+  OtpCode,
+  Venue,
+  Show,
+  Category,
+  Event,
+  Showtime,
+  SeatSection,
+  Ticket,
+  TicketLock,
+  Booking,
+  AdminRole,
+  CategoryType,
+  TicketStatus,
+  BookingStatus,
+  PaymentMethod,
+} from ".prisma/client";

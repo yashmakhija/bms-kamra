@@ -1,23 +1,35 @@
 import * as jsonwebtoken from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { config } from "../config";
-import { JwtPayload } from "../types";
+import { JwtPayload, AdminRole } from "../types";
 
 type JwtSignCallback = (err: Error | null, token: string) => void;
 
-export const generateToken = (userId: string): string => {
-  const token = jsonwebtoken.sign({ userId } as any, config.auth.jwtSecret, {
-    expiresIn: config.auth.jwtExpiresIn,
-  } as any);
+export const generateToken = (
+  userId: string,
+  isAdmin: boolean = false,
+  role: AdminRole | null = null
+): string => {
+  const token = jsonwebtoken.sign(
+    { userId, isAdmin, role } as JwtPayload,
+    config.auth.jwtSecret,
+    { expiresIn: config.auth.jwtExpiresIn } as any
+  );
 
   return token;
 };
 
 export const verifyToken = (token: string): JwtPayload | null => {
   try {
-    const decoded = jsonwebtoken.verify(token, config.auth.jwtSecret) as any;
-
-    return { userId: decoded.userId };
+    const decoded = jsonwebtoken.verify(
+      token,
+      config.auth.jwtSecret
+    ) as JwtPayload;
+    return {
+      userId: decoded.userId,
+      isAdmin: decoded.isAdmin || false,
+      role: decoded.role || null,
+    };
   } catch (error) {
     return null;
   }
