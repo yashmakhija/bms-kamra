@@ -11,7 +11,7 @@ export const getAdminProfile = async (req: AuthRequest, res: Response) => {
   try {
     const user = req.user;
 
-    if (!user || !user.admin) {
+    if (!user || !user.admin ) {
       return res
         .status(403)
         .json({ message: "Forbidden - Admin access required" });

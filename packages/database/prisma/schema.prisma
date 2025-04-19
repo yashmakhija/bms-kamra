@@ -131,8 +131,8 @@ model Show {
   
   venueId      String
   venue        Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  categories   Category[]
   events       Event[]
+  priceTiers   PriceTier[]
   
   @@map("shows")
 }
@@ -146,8 +146,7 @@ model Category {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   
-  shows        Show[]
-  seatSections SeatSection[]
+  priceTiers   PriceTier[]
   
   @@map("categories")
 }
@@ -157,6 +156,27 @@ enum CategoryType {
   PREMIUM
   REGULAR
   ECONOMY
+}
+
+// New model to handle price tiers with capacity and pricing for each category
+model PriceTier {
+  id           String   @id @default(cuid())
+  capacity     Int      // Total number of seats in this tier
+  price        Decimal  @db.Decimal(10, 2)
+  currency     String   @default("INR")
+  description  String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  showId       String
+  show         Show     @relation(fields: [showId], references: [id], onDelete: Cascade)
+  categoryId   String
+  category     Category @relation(fields: [categoryId], references: [id])
+  seatSections SeatSection[]
+  
+  @@unique([showId, categoryId]) // Each show-category combination can only have one price tier
+  @@map("price_tiers")
 }
 
 model Event {
@@ -189,21 +209,18 @@ model Showtime {
 }
 
 model SeatSection {
-  id           String   @id @default(cuid())
-  name         String
-  totalSeats   Int
-  availableSeats Int
-  price        Decimal  @db.Decimal(10, 2)
-  currency     String   @default("USD")
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  availableSeats Int      // Current available seats (changes as tickets are sold)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
   
-  categoryId   String
-  category     Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  showtimeId   String
-  showtime     Showtime @relation(fields: [showtimeId], references: [id], onDelete: Cascade)
-  tickets      Ticket[]
+  priceTierId    String
+  priceTier      PriceTier @relation(fields: [priceTierId], references: [id])
+  showtimeId     String
+  showtime       Showtime  @relation(fields: [showtimeId], references: [id], onDelete: Cascade)
+  tickets        Ticket[]
   
   @@map("seat_sections")
 }

@@ -1,13 +1,22 @@
 import { Request } from "express";
 import { User, Admin } from "@repo/database";
 
+/**
+ * Admin role types
+ */
 export type AdminRole = "SUPER_ADMIN" | "EDITOR";
 
+/**
+ * Extended request type that includes authenticated user
+ * Extends Express.Request and overrides the user property
+ */
 export interface AuthRequest extends Request {
-  user?: User & {
-    admin?: Admin | null;
+  user?: {
+    id: string;
+    role?: string;
+    isAdmin?: boolean;
+    [key: string]: any;
   };
-  userRole?: AdminRole | null;
   isAdmin?: boolean;
 }
 
@@ -24,12 +33,20 @@ export interface JwtPayload {
   isAdmin?: boolean;
 }
 
+/**
+ * Login response type
+ */
 export interface LoginResponse {
-  token: string;
-  user: Pick<User, "id" | "name" | "email" | "phone" | "image"> & {
+  user: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+    image: string | null;
     isAdmin: boolean;
-    role?: AdminRole | null;
+    role: AdminRole | null;
   };
+  token: string;
 }
 
 export interface PhoneLoginRequest {
@@ -39,4 +56,25 @@ export interface PhoneLoginRequest {
 export interface VerifyOtpRequest {
   phone: string;
   code: string;
+}
+
+/**
+ * Pagination options
+ */
+export interface PaginationOptions {
+  page?: number;
+  limit?: number;
+}
+
+/**
+ * Pagination result
+ */
+export interface PaginationResult<T> {
+  data: T[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 }

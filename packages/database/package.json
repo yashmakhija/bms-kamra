@@ -28,7 +28,8 @@
     "db:seed": "ts-node prisma/seed.ts",
     "dev": "tsc --watch",
     "lint": "eslint \"src/**/*.ts\"",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "admin:create": "ts-node scripts/create-admin.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.11.0",

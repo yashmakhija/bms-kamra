@@ -8,6 +8,20 @@ export const config = {
   server: {
     port: process.env.PORT || 3000,
     nodeEnv: process.env.NODE_ENV || "development",
+    baseUrl: process.env.BASE_URL || "http://localhost:3000",
+  },
+  database: {
+    connectionPoolMax: parseInt(process.env.DATABASE_POOL_MAX || "25", 10),
+    connectionPoolIdleTimeout: parseInt(
+      process.env.DATABASE_IDLE_TIMEOUT || "30000",
+      10
+    ),
+    connectionTimeout: parseInt(
+      process.env.DATABASE_CONNECTION_TIMEOUT || "10000",
+      10
+    ),
+    queryTimeout: parseInt(process.env.DATABASE_QUERY_TIMEOUT || "30000", 10),
+    debugEnabled: process.env.DEBUG_PRISMA === "true",
   },
   auth: {
     jwtSecret:
@@ -22,5 +36,34 @@ export const config = {
     accountSid: process.env.TWILIO_ACCOUNT_SID || "",
     authToken: process.env.TWILIO_AUTH_TOKEN || "",
     phoneNumber: process.env.TWILIO_PHONE_NUMBER || "",
+  },
+  redis: {
+    url: process.env.REDIS_URL || "redis://localhost:6379",
+    password: process.env.REDIS_PASSWORD || undefined,
+    enableCluster: process.env.REDIS_CLUSTER_ENABLED === "true",
+    clusterNodes: process.env.REDIS_CLUSTER_NODES
+      ? process.env.REDIS_CLUSTER_NODES.split(",").map((node) => node.trim())
+      : [],
+    keyPrefix: process.env.REDIS_KEY_PREFIX || "bms:",
+    defaultTTL: parseInt(process.env.REDIS_DEFAULT_TTL || "3600", 10), // Default 1 hour
+  },
+  cache: {
+    showTTL: parseInt(process.env.CACHE_SHOW_TTL || "3600", 10), // 1 hour
+    venueTTL: parseInt(process.env.CACHE_VENUE_TTL || "7200", 10), // 2 hours
+    categoryTTL: parseInt(process.env.CACHE_CATEGORY_TTL || "86400", 10), // 24 hours
+    seatAvailabilityTTL: parseInt(process.env.CACHE_SEAT_TTL || "60", 10), // 1 minute
+  },
+  rateLimit: {
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10), // 1 minute
+    maxRequests: parseInt(process.env.RATE_LIMIT_MAX || "100", 10), // 100 requests per minute
+    standardHeaders: process.env.RATE_LIMIT_HEADERS !== "false", // Send standard rate limit headers
+    legacyHeaders: false, // Don't use legacy headers
+  },
+  logging: {
+    level: process.env.LOG_LEVEL || "info",
+    maxFiles: process.env.LOG_MAX_FILES || "14d",
+  },
+  queue: {
+    concurrency: parseInt(process.env.QUEUE_CONCURRENCY || "10", 10),
   },
 };

@@ -30,9 +30,15 @@ export const authMiddleware = async (
       return res.status(401).json({ message: "Unauthorized - User not found" });
     }
 
-    req.user = user;
+    // Set user data on the request object
+    req.user = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.admin?.role || undefined,
+      isAdmin: !!user.admin,
+    };
     req.isAdmin = !!user.admin;
-    req.userRole = (user.admin?.role as AdminRole) || null;
 
     next();
   } catch (error) {
@@ -60,7 +66,7 @@ export const isSuperAdminMiddleware = async (
   res: Response,
   next: NextFunction
 ) => {
-  if (!req.user || !req.isAdmin || req.userRole !== "SUPER_ADMIN") {
+  if (!req.user || !req.isAdmin || req.user.role !== "SUPER_ADMIN") {
     return res
       .status(403)
       .json({ message: "Forbidden - Super admin access required" });
@@ -77,7 +83,7 @@ export const hasRoleMiddleware = (allowedRoles: AdminRole[]) => {
         .json({ message: "Forbidden - Admin access required" });
     }
 
-    if (!req.userRole || !allowedRoles.includes(req.userRole)) {
+    if (!req.user.role || !allowedRoles.includes(req.user.role as AdminRole)) {
       return res.status(403).json({
         message: `Forbidden - Required role: ${allowedRoles.join(" or ")}`,
       });

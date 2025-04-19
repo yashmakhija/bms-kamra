@@ -1,61 +1,129 @@
-# BMS API
+# Book My Show API
 
-The backend API server for the Book My Show (BMS) application. This API provides a complete authentication system with multiple login methods, user profile management, and secure endpoints for booking tickets.
+The backend API service for the Book My Show (BMS) application, providing endpoints for venue, show, booking management, and user authentication.
 
 ## Features
 
-- **Multi-method Authentication**
-  - Email/Password registration and login
-  - Google OAuth integration
-  - Phone OTP verification via Twilio
-- **User Management**
-  - Profile retrieval and updates
-  - Secure password changing
-  - Account deletion with cascading data cleanup
-- **Security**
+- **Authentication & Authorization**
+
   - JWT-based authentication
-  - Request validation and sanitization
-  - Secure password hashing via bcrypt
-- **Clean Architecture**
-  - Controller-Service-Repository pattern
-  - Middleware for auth, validation, and error handling
-  - TypeScript for type safety
+  - Role-based access control (SUPER_ADMIN, EDITOR, USER)
+  - Multiple authentication methods (email/password, Google OAuth, phone OTP)
+
+- **Core Functionality**
+
+  - Venue management
+  - Show and event management
+  - Booking and ticketing system
+  - User profile management
+
+- **Production-Ready Features**
+  - Redis-based caching for high performance
+  - Distributed locking for concurrent operations
+  - Rate limiting to prevent abuse
+  - Request logging and monitoring
+  - Background job processing with Redis queues
+  - Comprehensive error handling
+
+## Tech Stack
+
+- **Core**: Node.js, Express, TypeScript
+- **Database**: PostgreSQL with Prisma ORM
+- **Caching**: Redis/IORedis
+- **Queue System**: BullMQ
+- **Authentication**: JWT, bcrypt, Google OAuth, Twilio for SMS
+- **Logging**: Winston
+- **Security**: Helmet, CORS, Express Rate Limit
+- **Others**: Compression, HTTP Status Codes
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js v18 or higher
-- pnpm v9.0.0 or higher
-- PostgreSQL database (or Neon.tech account)
-
-### Environment Setup
-
-1. Copy the `.env.example` file to `.env`
-2. Fill in the required environment variables:
-   - `DATABASE_URL`: PostgreSQL connection string
-   - `JWT_SECRET` and `JWT_EXPIRES_IN`: JWT configuration
-   - `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`: Google OAuth credentials
-   - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER`: Twilio credentials for SMS OTP
+- Node.js (v18 or higher)
+- PostgreSQL
+- Redis (for caching and queues)
+- pnpm package manager
 
 ### Installation
 
-```bash
-# Install dependencies
-pnpm install
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+3. Copy `.env.example` to `.env` and update the configuration
+4. Start the development server:
+   ```bash
+   pnpm dev
+   ```
 
-# Generate Prisma client
-pnpm db:generate
+## Environment Variables
 
-# Push database schema changes (if needed)
-pnpm db:push
+See `.env.example` for a list of required environment variables. Key configurations include:
 
-# Run database seed (optional)
-pnpm db:seed
+- **Server**: `PORT`, `NODE_ENV`, `BASE_URL`
+- **Authentication**: `JWT_SECRET`, `JWT_EXPIRES_IN`
+- **Database**: `DATABASE_URL`
+- **Redis**: `REDIS_URL`, `REDIS_PASSWORD`, `REDIS_CLUSTER_ENABLED`, etc.
+- **Rate Limiting**: `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX`
+- **Logging**: `LOG_LEVEL`
+- **External Services**: Google OAuth and Twilio credentials
 
-# Start development server
-pnpm dev
-```
+## API Structure
+
+The API follows a structured approach:
+
+- **Routes**: Define API endpoints and middleware
+- **Controllers**: Handle request/response logic
+- **Services**: Implement business logic and database operations
+- **Middlewares**: Handle cross-cutting concerns (auth, validation, caching)
+- **Utils**: Utility functions and helpers
+
+## Caching Strategy
+
+The API uses Redis for caching with the following strategies:
+
+- **Public Data Caching**: Venues, shows, categories cached with TTL (1-24 hours)
+- **User Data Caching**: User profiles and bookings cached with short TTL (5 minutes)
+- **Seat Availability**: Near real-time caching with very short TTL (1 minute)
+
+Cache invalidation is handled automatically when data is modified.
+
+## Rate Limiting
+
+Multiple rate limiting strategies are implemented:
+
+- **General API Rate Limit**: 100 requests per minute per IP
+- **Authentication Endpoints**: 30 requests per 15 minutes per IP
+- **Public Endpoints**: 200 requests per minute per IP
+
+## Background Processing
+
+The API uses Redis-backed queues for:
+
+- **Email Sending**: Transactional emails for bookings, account changes
+- **Notifications**: User notifications for various events
+- **Reports**: Generation of administrative reports
+- **Booking Cleanup**: Automatic cleanup of expired/unpaid bookings
+
+## Monitoring and Logging
+
+- **Request Logging**: All API requests are logged with request ID, method, path, timing
+- **Error Logging**: Structured error logging with context
+- **Performance Tracking**: Slow responses are flagged
+
+## Deployment
+
+The API is designed for deployment in containerized environments:
+
+- Graceful shutdown handling
+- Health check endpoint at `/health`
+- Configurable via environment variables
+
+## License
+
+This project is licensed under the ISC License.
 
 ## API Documentation
 
