@@ -1,6 +1,6 @@
 # Book My Show API
 
-The backend API service for the Book My Show (BMS) application, providing endpoints for venue, show, booking management, and user authentication.
+The backend API service for the Kunal Kamra (BMS) application, providing endpoints for venue, show, booking management, user authentication, and payment processing.
 
 ## Features
 
@@ -16,6 +16,7 @@ The backend API service for the Book My Show (BMS) application, providing endpoi
   - Show and event management
   - Booking and ticketing system
   - User profile management
+  - Payment processing with Razorpay
 
 - **Production-Ready Features**
   - Redis-based caching for high performance
@@ -32,6 +33,7 @@ The backend API service for the Book My Show (BMS) application, providing endpoi
 - **Caching**: Redis/IORedis
 - **Queue System**: BullMQ
 - **Authentication**: JWT, bcrypt, Google OAuth, Twilio for SMS
+- **Payment Gateway**: Razorpay
 - **Logging**: Winston
 - **Security**: Helmet, CORS, Express Rate Limit
 - **Others**: Compression, HTTP Status Codes
@@ -69,6 +71,7 @@ See `.env.example` for a list of required environment variables. Key configurati
 - **Rate Limiting**: `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX`
 - **Logging**: `LOG_LEVEL`
 - **External Services**: Google OAuth and Twilio credentials
+- **Razorpay**: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`
 
 ## API Structure
 
@@ -196,6 +199,28 @@ The API server runs on port 3091 by default.
   ```
 - **Response**: User object with authentication token
 
+#### Verify Authentication
+
+- **URL**: `/api/auth/verify`
+- **Method**: GET
+- **Headers**:
+  - Authorization: `Bearer YOUR_JWT_TOKEN`
+- **Response**:
+  ```json
+  {
+    "authenticated": true,
+    "user": {
+      "id": "user_id",
+      "name": "User Name",
+      "email": "user@example.com",
+      "image": "https://example.com/profile.jpg",
+      "isAdmin": false
+    }
+  }
+  ```
+- **Error Response**: Returns 401 Unauthorized if the token is invalid or missing
+- **Note**: This endpoint is useful for frontend protected routes to verify authentication status
+
 ### User Endpoints
 
 All user endpoints require authentication via Bearer token.
@@ -257,6 +282,72 @@ All user endpoints require authentication via Bearer token.
 - **URL**: `/api/health`
 - **Method**: GET
 - **Response**: API status
+
+## Payment Processing
+
+The API uses Razorpay for processing payments with the following features:
+
+- Secure payment processing
+- Order creation and validation
+- Payment verification with cryptographic signatures
+- Webhook processing for payment confirmations
+- Automatic ticket status updates on successful payment
+
+### Razorpay Integration
+
+To use Razorpay:
+
+1. Create a Razorpay account and obtain API keys
+2. Set environment variables:
+   ```
+   RAZORPAY_KEY_ID=your_key_id
+   RAZORPAY_KEY_SECRET=your_key_secret
+   RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
+   ```
+3. Configure webhook URL in Razorpay dashboard to point to:
+   ```
+   https://your-api-domain.com/api/razorpay/webhook
+   ```
+
+### Payment Endpoints
+
+#### Create Razorpay Order
+
+- **URL**: `/api/razorpay/orders/:bookingId`
+- **Method**: POST
+- **Authentication**: Required
+- **Response**:
+  ```json
+  {
+    "orderId": "order_12345abcdef",
+    "amount": 100000,
+    "currency": "INR",
+    "keyId": "rzp_test_your_key_id"
+  }
+  ```
+
+#### Verify Razorpay Payment
+
+- **URL**: `/api/razorpay/verify/:bookingId`
+- **Method**: POST
+- **Authentication**: Required
+- **Body**:
+  ```json
+  {
+    "razorpayPaymentId": "pay_12345abcdef",
+    "razorpayOrderId": "order_12345abcdef",
+    "razorpaySignature": "generated_signature_from_razorpay"
+  }
+  ```
+- **Response**: Booking object with updated payment status
+
+#### Razorpay Webhook (Server-to-Server)
+
+- **URL**: `/api/razorpay/webhook`
+- **Method**: POST
+- **Headers**: `x-razorpay-signature` (provided by Razorpay)
+- **Body**: Webhook payload from Razorpay
+- **Response**: Success message
 
 ## Project Structure
 

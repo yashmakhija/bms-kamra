@@ -8,6 +8,7 @@ import showRoutes from "./showRoutes";
 import bookingRoutes from "./bookingRoutes";
 import priceTierRoutes from "./priceTierRoutes";
 import seatSectionRoutes from "./seatSectionRoutes";
+import razorpayRoutes from "./razorpayRoutes";
 import { StatusCodes } from "http-status-codes";
 import cacheMiddleware from "../middlewares/cacheMiddleware";
 import {
@@ -84,6 +85,9 @@ router.use(
 
 // Bookings - general rate limiting, no global caching as bookings are dynamic
 router.use("/bookings", generalRateLimit, bookingRoutes);
+
+// Razorpay - payment gateway integration
+router.use("/razorpay", generalRateLimit, razorpayRoutes);
 
 // Catch-all for invalid routes
 router.all("*", (req, res) => {

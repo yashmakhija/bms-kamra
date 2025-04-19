@@ -155,6 +155,14 @@ export const processPayment = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: "Booking not found" });
     }
 
+    if (paymentMethod === "RAZORPAY") {
+      return res.status(400).json({
+        message:
+          "For Razorpay payments, use the /razorpay/verify/:bookingId endpoint",
+        redirectTo: `/razorpay/verify/${bookingId}`,
+      });
+    }
+
     const result = await bookingService.processPayment(
       bookingId as string,
       paymentMethod,
