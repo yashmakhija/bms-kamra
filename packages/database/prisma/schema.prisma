@@ -276,6 +276,8 @@ model Booking {
   currency       String         @default("USD")
   paymentMethod  PaymentMethod?
   paymentId      String?        // External payment reference ID
+  razorpayOrderId String?       // Razorpay order ID
+  razorpaySignature String?     // Razorpay signature for verification
   paymentDate    DateTime?
   expiresAt      DateTime       // When the booking expires if not paid
   createdAt      DateTime       @default(now())
@@ -304,4 +306,5 @@ enum PaymentMethod {
   PAYPAL
   BANK_TRANSFER
   WALLET
+  RAZORPAY
 }

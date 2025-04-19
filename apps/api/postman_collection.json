@@ -203,6 +203,24 @@
             },
             "description": "Verify OTP code for phone login"
           }
+        },
+        {
+          "name": "Verify Authentication",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "verify"]
+            },
+            "description": "Verify if user is authenticated"
+          }
         }
       ]
     },
@@ -1114,6 +1132,93 @@
               "path": ["bookings", "{{bookingId}}", "payment"]
             },
             "description": "Process payment for a booking"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Razorpay",
+      "item": [
+        {
+          "name": "Check Razorpay Status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/razorpay/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["razorpay", "status"]
+            },
+            "description": "Check if Razorpay is properly configured"
+          }
+        },
+        {
+          "name": "Create Razorpay Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/razorpay/orders/{{bookingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["razorpay", "orders", "{{bookingId}}"]
+            },
+            "description": "Create a Razorpay order for a booking"
+          }
+        },
+        {
+          "name": "Verify Razorpay Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpayPaymentId\": \"pay_12345abcdef\",\n  \"razorpayOrderId\": \"order_12345abcdef\",\n  \"razorpaySignature\": \"generated_signature_from_razorpay\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/razorpay/verify/{{bookingId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["razorpay", "verify", "{{bookingId}}"]
+            },
+            "description": "Verify a Razorpay payment"
+          }
+        },
+        {
+          "name": "Razorpay Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-razorpay-signature",
+                "value": "webhook_signature_from_razorpay"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"payment.authorized\",\n  \"payload\": {\n    \"payment\": {\n      \"entity\": {\n        \"id\": \"pay_12345abcdef\",\n        \"order\": {\n          \"entity\": {\n            \"id\": \"order_12345abcdef\"\n          }\n        }\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/razorpay/webhook",
+              "host": ["{{baseUrl}}"],
+              "path": ["razorpay", "webhook"]
+            },
+            "description": "Webhook endpoint for Razorpay payment events"
           }
         }
       ]

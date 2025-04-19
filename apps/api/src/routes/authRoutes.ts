@@ -5,6 +5,7 @@ import {
   googleLogin,
   requestPhoneOtp,
   verifyPhoneOtp,
+  verifyAuth,
 } from "../controllers/authController";
 import {
   validate,
@@ -13,6 +14,7 @@ import {
   phoneValidation,
   otpValidation,
 } from "../middlewares/validationMiddleware";
+import { authMiddleware } from "../middlewares/authMiddleware";
 
 const router: Router = Router();
 
@@ -22,5 +24,7 @@ router.post("/google", googleLogin);
 
 router.post("/phone/request-otp", phoneValidation, validate, requestPhoneOtp);
 router.post("/phone/verify-otp", otpValidation, validate, verifyPhoneOtp);
+
+router.get("/verify", authMiddleware, verifyAuth);
 
 export default router;

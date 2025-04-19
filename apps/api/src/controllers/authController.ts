@@ -256,3 +256,29 @@ export const verifyPhoneOtp = async (req: Request, res: Response) => {
     return res.status(500).json({ message: "Failed to verify OTP" });
   }
 };
+
+/**
+ * Verify if the user is authenticated
+ * Simple endpoint for frontend to check authentication status
+ */
+export const verifyAuth = async (req: AuthRequest, res: Response) => {
+  try {
+    // If this point is reached, it means the authMiddleware passed
+    // and the user is authenticated
+    return res.status(200).json({
+      authenticated: true,
+      user: {
+        id: req.user?.id,
+        name: req.user?.name,
+        email: req.user?.email,
+        image: req.user?.image,
+        isAdmin: req.user?.isAdmin || false,
+      },
+    });
+  } catch (error) {
+    console.error("Auth verification error:", error);
+    return res
+      .status(500)
+      .json({ message: "Authentication verification failed" });
+  }
+};
