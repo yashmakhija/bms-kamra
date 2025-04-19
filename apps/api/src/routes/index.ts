@@ -34,7 +34,7 @@ router.get("/health", (req, res) => {
 
 // API routes with appropriate middleware
 // Auth routes - apply auth-specific rate limiting
-router.use("/auth", authRateLimit, authRoutes);
+router.use("/auth", authRoutes);
 
 // User routes - general rate limiting
 router.use("/users", generalRateLimit, userRoutes);

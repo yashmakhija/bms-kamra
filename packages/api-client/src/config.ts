@@ -33,7 +33,7 @@ function getApiBaseUrl(): string {
   }
 
   // Default fallback
-  return "https://8dba-2405-201-682b-39a8-50d8-eea6-c674-2ec3.ngrok-free.app/api";
+  return "http://localhost:3091/api";
 }
 
 /**
@@ -54,11 +54,55 @@ export const ENDPOINTS = {
     google: "/auth/google",
     phoneRequestOtp: "/auth/phone/request-otp",
     phoneVerifyOtp: "/auth/phone/verify-otp",
+    verify: "/auth/verify",
   },
   user: {
     me: "/users/me",
     profile: "/users/profile",
     changePassword: "/users/change-password",
     deleteAccount: "/users/account",
+  },
+  booking: {
+    create: "/bookings",
+    getUserBookings: "/bookings/my-bookings",
+    getById: (id: string) => `/bookings/${id}`,
+    cancel: (id: string) => `/bookings/${id}/cancel`,
+    payment: (id: string) => `/bookings/${id}/payment`,
+  },
+  razorpay: {
+    status: "/razorpay/status",
+    createOrder: (bookingId: string) => `/razorpay/orders/${bookingId}`,
+    verifyPayment: (bookingId: string) => `/razorpay/verify/${bookingId}`,
+    webhook: "/razorpay/webhook",
+  },
+  venues: {
+    getAll: "/venues",
+    getById: (id: string) => `/venues/${id}`,
+  },
+  shows: {
+    getAll: "/shows",
+    getById: (id: string) => `/shows/${id}`,
+    create: "/shows",
+    update: (id: string) => `/shows/${id}`,
+    delete: (id: string) => `/shows/${id}`,
+    createEvent: "/shows/events",
+    createShowtime: "/shows/showtimes",
+  },
+  categories: {
+    getAll: "/categories",
+    getById: (id: string) => `/categories/${id}`,
+    getByType: (type: string) => `/categories/type/${type}`,
+    create: "/categories",
+  },
+  priceTiers: {
+    getAll: "/price-tiers",
+    getById: (id: string) => `/price-tiers/${id}`,
+    getByShow: (showId: string) => `/price-tiers/show/${showId}`,
+    create: "/shows/sections",
+  },
+  seatSections: {
+    getByShowtime: (showtimeId: string) =>
+      `/seat-sections/showtime/${showtimeId}`,
+    create: "/seat-sections",
   },
 };
