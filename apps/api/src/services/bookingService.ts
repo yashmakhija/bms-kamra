@@ -102,129 +102,138 @@ export async function createBooking(bookingData: {
   }
 
   try {
-    return await prisma.$transaction(async (tx) => {
-      // 1. Check if section has enough available seats
-      const seatSection = await tx.seatSection.findUnique({
-        where: { id: sectionId },
-        include: {
-          priceTier: true,
-        },
-      });
+    // Increase transaction timeout to 30 seconds
+    return await prisma.$transaction(
+      async (tx) => {
+        // 1. Check if section has enough available seats
+        const seatSection = await tx.seatSection.findUnique({
+          where: { id: sectionId },
+          include: {
+            priceTier: true,
+          },
+        });
 
-      if (!seatSection) {
-        throw new AppError("Section not found", StatusCodes.NOT_FOUND);
-      }
+        if (!seatSection) {
+          throw new AppError("Section not found", StatusCodes.NOT_FOUND);
+        }
 
-      if (seatSection.availableSeats < quantity) {
-        throw new AppError(
-          "Not enough seats available",
-          StatusCodes.BAD_REQUEST
-        );
-      }
+        if (seatSection.availableSeats < quantity) {
+          throw new AppError(
+            "Not enough seats available",
+            StatusCodes.BAD_REQUEST
+          );
+        }
 
-      // 2. Get available tickets from the section
-      const availableTickets = await tx.ticket.findMany({
-        where: {
-          sectionId,
-          status: "AVAILABLE",
-        },
-        take: quantity,
-      });
+        // 2. Get available tickets from the section
+        const availableTickets = await tx.ticket.findMany({
+          where: {
+            sectionId,
+            status: "AVAILABLE",
+          },
+          take: quantity,
+        });
 
-      if (availableTickets.length < quantity) {
-        throw new AppError(
-          "Not enough tickets available",
-          StatusCodes.BAD_REQUEST
-        );
-      }
+        if (availableTickets.length < quantity) {
+          throw new AppError(
+            "Not enough tickets available",
+            StatusCodes.BAD_REQUEST
+          );
+        }
 
-      // 3. Calculate total amount
-      const totalAmount = seatSection.priceTier.price.toNumber() * quantity;
+        // 3. Calculate total amount
+        const totalAmount = seatSection.priceTier.price.toNumber() * quantity;
 
-      // 4. Create a booking record
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 15); // Expires in 15 minutes if not paid
+        // 4. Create a booking record
+        const expiresAt = new Date();
+        expiresAt.setMinutes(expiresAt.getMinutes() + 15); // Expires in 15 minutes if not paid
 
-      const booking = await tx.booking.create({
-        data: {
-          userId,
-          totalAmount: totalAmount.toString(),
-          currency: seatSection.priceTier.currency,
-          status: "PENDING",
-          expiresAt,
-        },
-      });
+        const booking = await tx.booking.create({
+          data: {
+            userId,
+            totalAmount: totalAmount.toString(),
+            currency: seatSection.priceTier.currency,
+            status: "PENDING",
+            expiresAt,
+          },
+        });
 
-      // 5. Update tickets to reserved status and link to booking
-      await Promise.all(
-        availableTickets.map(async (ticket) => {
-          await tx.ticket.update({
-            where: { id: ticket.id },
+        // 5. Update tickets to reserved status - OPTIMIZED: use updateMany instead of Promise.all with individual updates
+        await tx.ticket.updateMany({
+          where: {
+            id: {
+              in: availableTickets.map((ticket) => ticket.id),
+            },
+          },
+          data: {
+            status: "RESERVED",
+          },
+        });
+
+        // Then connect tickets to booking in a separate operation
+        for (const ticket of availableTickets) {
+          await tx.booking.update({
+            where: { id: booking.id },
             data: {
-              status: "RESERVED",
-              bookings: {
-                connect: { id: booking.id },
+              tickets: {
+                connect: { id: ticket.id },
               },
             },
           });
-        })
-      );
+        }
 
-      // 6. Update available seats in the section
-      await tx.seatSection.update({
-        where: { id: sectionId },
-        data: {
-          availableSeats: seatSection.availableSeats - quantity,
-        },
-      });
+        // 6. Update available seats in the section
+        await tx.seatSection.update({
+          where: { id: sectionId },
+          data: {
+            availableSeats: seatSection.availableSeats - quantity,
+          },
+        });
 
-      // Get full booking details to return
-      const bookingWithDetails = await tx.booking.findUnique({
-        where: { id: booking.id },
-        include: {
-          tickets: true,
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
+        // Get full booking details to return
+        const bookingWithDetails = await tx.booking.findUnique({
+          where: { id: booking.id },
+          include: {
+            tickets: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
             },
           },
-        },
-      });
+        });
 
-      // Cache invalidation - update available seat count
-      const cacheKey = `section:${sectionId}:availableSeats`;
-      await setCache(
-        cacheKey,
-        seatSection.availableSeats - quantity,
-        config.cache.seatAvailabilityTTL
-      );
+        // Cache invalidation - update available seat count
+        const cacheKey = `section:${sectionId}:availableSeats`;
+        await setCache(
+          cacheKey,
+          seatSection.availableSeats - quantity,
+          config.cache.seatAvailabilityTTL
+        );
 
-      // Invalidate any cached show/section data
-      await deleteCachePattern(`show:*:section:${sectionId}*`);
-
-      // Log successful booking
-      logger.info("Booking created successfully", {
-        bookingId: booking.id,
-        userId,
-        sectionId,
-        quantity,
-      });
-
-      return { booking: bookingWithDetails };
-    });
+        return formatBooking(bookingWithDetails!);
+      },
+      {
+        timeout: 30000, // Increase transaction timeout to 30 seconds
+      }
+    );
   } catch (error) {
-    logger.error("Error creating booking", { error, bookingData });
+    logger.error("Error creating booking", { error });
+
+    // Clean up the lock regardless of success or failure
+    await releaseLock(lockKey);
+
     if (error instanceof AppError) {
       throw error;
     }
+
     throw new AppError(
       "Failed to create booking",
       StatusCodes.INTERNAL_SERVER_ERROR
     );
   } finally {
-    // Always release the lock
+    // Ensure lock is released
     await releaseLock(lockKey);
   }
 }

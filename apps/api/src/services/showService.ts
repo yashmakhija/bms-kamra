@@ -546,6 +546,10 @@ export const createSeatSection = async (data: {
       await Promise.all([
         deleteCache(`show:${showtime.event.showId}:details`),
         deleteCachePattern(`showtime:${data.showtimeId}:*`),
+        deleteCachePattern(`api:*:/api/shows*`),
+        deleteCachePattern(`api:*:/api/categories*`),
+        deleteCachePattern(`api:*:/api/venues*`),
+        deleteCachePattern(`api:*:/api/seat-sections*`),
       ]);
 
       logger.info("Seat section created successfully with tickets", {
