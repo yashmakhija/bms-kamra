@@ -78,3 +78,25 @@ export interface PaginationResult<T> {
     totalPages: number;
   };
 }
+
+export interface BookingWithDetails {
+  id: string;
+  userId: string;
+  status: string;
+  totalAmount: number;
+  currency: string;
+  expiresAt: Date;
+  paymentMethod?: string;
+  paymentId?: string;
+  paymentDate?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  tickets: {
+    id: string;
+    status: string;
+    sectionId: string;
+    price: number;
+    [key: string]: any;
+  }[];
+  [key: string]: any;
+}

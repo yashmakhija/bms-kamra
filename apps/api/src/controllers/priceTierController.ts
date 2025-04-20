@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../types";
 import * as priceTierService from "../services/priceTierService";
+import * as categoryService from "../services/categoryService";
 import { createServiceLogger } from "../utils/logger";
 import { StatusCodes } from "http-status-codes";
+import { CategoryType } from "@repo/database";
 
 const logger = createServiceLogger("price-tier-controller");
 
@@ -89,13 +91,20 @@ export const getPriceTiersByShowId = async (req: Request, res: Response) => {
  */
 export const createPriceTier = async (req: AuthRequest, res: Response) => {
   try {
-    const { showId, categoryId, capacity, price, currency, description } =
+    const { showId, categoryType, capacity, price, currency, description } =
       req.body;
 
     // Validate required fields
-    if (!showId || !categoryId || !capacity || !price) {
+    if (!showId || !categoryType || !capacity || !price) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        message: "Show ID, category ID, capacity, and price are required",
+        message: "Show ID, category type, capacity, and price are required",
+      });
+    }
+
+    // Validate category type
+    if (!["VIP", "PREMIUM", "REGULAR"].includes(categoryType)) {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        message: "Category type must be one of: VIP, PREMIUM, REGULAR",
       });
     }
 
@@ -106,9 +115,15 @@ export const createPriceTier = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Get or create default category by type
+    const category = await categoryService.getDefaultCategoryByType(
+      categoryType as CategoryType
+    );
+
+    // Now create price tier with the appropriate category
     const priceTier = await priceTierService.createPriceTier({
       showId,
-      categoryId,
+      categoryId: category.id,
       capacity: Number(capacity),
       price,
       currency,

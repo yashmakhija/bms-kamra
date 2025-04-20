@@ -21,6 +21,8 @@ import {
   formatBooking,
   formatBookingForAdmin,
 } from "../transformers/bookingTransformer";
+import { LockManager } from "../utils/lockManager";
+import { v4 as uuidv4 } from "uuid";
 
 /**
  * Get the available seat count from cache or database
@@ -74,167 +76,106 @@ export const getAvailableSeatCount = async (
 };
 
 /**
- * Create a new booking for tickets
+ * Create a new booking
  */
-export async function createBooking(bookingData: {
+export async function createBooking({
+  userId,
+  showtimeId,
+  sectionId,
+  quantity,
+}: {
   userId: string;
   showtimeId: string;
   sectionId: string;
   quantity: number;
-  paymentMethod?: PaymentMethod;
-  paymentStatus?: string;
 }) {
-  const { userId, showtimeId, sectionId, quantity } = bookingData;
-
-  // Get a distributed lock for this section to prevent race conditions
-  const lockKey = `booking:section:${sectionId}`;
-  const lockAcquired = await acquireLock(lockKey, 30); // 30 second lock
-
-  if (!lockAcquired) {
-    logger.warn("Failed to acquire lock for booking creation", {
-      sectionId,
-      userId,
-    });
-    throw new AppError(
-      "System is currently processing another booking for this section. Please try again.",
-      StatusCodes.TOO_MANY_REQUESTS
-    );
-  }
-
   try {
-    // Increase transaction timeout to 30 seconds
-    return await prisma.$transaction(
-      async (tx) => {
-        // 1. Check if section has enough available seats
-        const seatSection = await tx.seatSection.findUnique({
-          where: { id: sectionId },
-          include: {
-            priceTier: true,
-          },
-        });
-
-        if (!seatSection) {
-          throw new AppError("Section not found", StatusCodes.NOT_FOUND);
-        }
-
-        if (seatSection.availableSeats < quantity) {
-          throw new AppError(
-            "Not enough seats available",
-            StatusCodes.BAD_REQUEST
-          );
-        }
-
-        // 2. Get available tickets from the section
-        const availableTickets = await tx.ticket.findMany({
-          where: {
-            sectionId,
-            status: "AVAILABLE",
-          },
-          take: quantity,
-        });
-
-        if (availableTickets.length < quantity) {
-          throw new AppError(
-            "Not enough tickets available",
-            StatusCodes.BAD_REQUEST
-          );
-        }
-
-        // 3. Calculate total amount
-        const totalAmount = seatSection.priceTier.price.toNumber() * quantity;
-
-        // 4. Create a booking record
-        const expiresAt = new Date();
-        expiresAt.setMinutes(expiresAt.getMinutes() + 15); // Expires in 15 minutes if not paid
-
-        const booking = await tx.booking.create({
-          data: {
-            userId,
-            totalAmount: totalAmount.toString(),
-            currency: seatSection.priceTier.currency,
-            status: "PENDING",
-            expiresAt,
-          },
-        });
-
-        // 5. Update tickets to reserved status - OPTIMIZED: use updateMany instead of Promise.all with individual updates
-        await tx.ticket.updateMany({
-          where: {
-            id: {
-              in: availableTickets.map((ticket) => ticket.id),
-            },
-          },
-          data: {
-            status: "RESERVED",
-          },
-        });
-
-        // Then connect tickets to booking in a separate operation
-        for (const ticket of availableTickets) {
-          await tx.booking.update({
-            where: { id: booking.id },
-            data: {
-              tickets: {
-                connect: { id: ticket.id },
-              },
-            },
-          });
-        }
-
-        // 6. Update available seats in the section
-        await tx.seatSection.update({
-          where: { id: sectionId },
-          data: {
-            availableSeats: seatSection.availableSeats - quantity,
-          },
-        });
-
-        // Get full booking details to return
-        const bookingWithDetails = await tx.booking.findUnique({
-          where: { id: booking.id },
-          include: {
-            tickets: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-        });
-
-        // Cache invalidation - update available seat count
-        const cacheKey = `section:${sectionId}:availableSeats`;
-        await setCache(
-          cacheKey,
-          seatSection.availableSeats - quantity,
-          config.cache.seatAvailabilityTTL
-        );
-
-        return formatBooking(bookingWithDetails!);
-      },
-      {
-        timeout: 30000, // Increase transaction timeout to 30 seconds
-      }
+    logger.info(
+      `Creating booking for user ${userId}, section ${sectionId}, quantity ${quantity}`
     );
-  } catch (error) {
-    logger.error("Error creating booking", { error });
 
-    // Clean up the lock regardless of success or failure
-    await releaseLock(lockKey);
+    // Validate input
+    if (quantity <= 0) {
+      throw new AppError("Quantity must be positive", StatusCodes.BAD_REQUEST);
+    }
+
+    // Get price information for the section
+    const sectionWithPrice = await prisma.seatSection.findUnique({
+      where: { id: sectionId },
+      include: {
+        priceTier: true,
+        showtime: true,
+      },
+    });
+
+    if (!sectionWithPrice) {
+      throw new AppError("Section not found", StatusCodes.NOT_FOUND);
+    }
+
+    if (showtimeId !== sectionWithPrice.showtimeId) {
+      throw new AppError(
+        "Section does not belong to specified showtime",
+        StatusCodes.BAD_REQUEST
+      );
+    }
+
+    // Calculate total amount
+    const price = Number(sectionWithPrice.priceTier.price);
+    const totalAmount = price * quantity;
+    const currency = sectionWithPrice.priceTier.currency;
+
+    // Reserve tickets using our new concurrent-safe function
+    const ticketIds = await reserveTickets(sectionId, quantity);
+
+    // Create the booking with the reserved tickets
+    const booking = await prisma.booking.create({
+      data: {
+        userId,
+        totalAmount,
+        currency,
+        status: "PENDING",
+        expiresAt: new Date(Date.now() + 15 * 60 * 1000), // 15 minutes
+        tickets: {
+          connect: ticketIds.map((id) => ({ id })),
+        },
+      },
+      include: {
+        tickets: {
+          include: {
+            section: {
+              include: {
+                showtime: {
+                  include: {
+                    event: {
+                      include: {
+                        show: {
+                          include: {
+                            venue: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return formatBooking(booking);
+  } catch (error) {
+    logger.error(`Error creating booking:`, { error });
 
     if (error instanceof AppError) {
       throw error;
     }
 
     throw new AppError(
-      "Failed to create booking",
+      `Failed to create booking: ${(error as Error).message}`,
       StatusCodes.INTERNAL_SERVER_ERROR
     );
-  } finally {
-    // Ensure lock is released
-    await releaseLock(lockKey);
   }
 }
 
@@ -1029,4 +970,96 @@ export async function deleteBooking(id: string) {
     // Always release the lock
     await releaseLock(lockKey);
   }
+}
+
+/**
+ * Reserve tickets for a booking
+ * Uses distributed locking to prevent race conditions
+ */
+export async function reserveTickets(
+  sectionId: string,
+  quantity: number
+): Promise<string[]> {
+  // Use our new LockManager to handle distributed locking
+  const resourceKey = `section:${sectionId}:reservation`;
+
+  const result = await LockManager.withLock<string[]>(
+    resourceKey,
+    async () => {
+      // Check available tickets under the lock
+      const section = await prisma.seatSection.findUnique({
+        where: { id: sectionId },
+      });
+
+      if (!section) {
+        throw new AppError("Seat section not found", StatusCodes.NOT_FOUND);
+      }
+
+      if (section.availableSeats < quantity) {
+        throw new AppError(
+          `Not enough available seats. Requested: ${quantity}, Available: ${section.availableSeats}`,
+          StatusCodes.BAD_REQUEST
+        );
+      }
+
+      // Find available tickets
+      const availableTickets = await prisma.ticket.findMany({
+        where: {
+          sectionId,
+          status: "AVAILABLE",
+        },
+        take: quantity,
+      });
+
+      if (availableTickets.length < quantity) {
+        throw new AppError(
+          `Not enough available tickets. Requested: ${quantity}, Found: ${availableTickets.length}`,
+          StatusCodes.BAD_REQUEST
+        );
+      }
+
+      // Update tickets atomically within the lock
+      const ticketIds = availableTickets.map((ticket) => ticket.id);
+
+      // Mark tickets as reserved in a single transaction
+      await prisma.$transaction([
+        // Update ticket status
+        prisma.ticket.updateMany({
+          where: {
+            id: { in: ticketIds },
+            status: "AVAILABLE", // Extra verification of status
+          },
+          data: {
+            status: "RESERVED",
+          },
+        }),
+        // Update available seats count
+        prisma.seatSection.update({
+          where: { id: sectionId },
+          data: {
+            availableSeats: {
+              decrement: quantity,
+            },
+          },
+        }),
+      ]);
+
+      logger.info(`Reserved ${quantity} tickets for section ${sectionId}`);
+      return ticketIds;
+    },
+    {
+      ttlMs: 10000, // 10 seconds should be enough for the reservation
+      retryCount: 3, // Try 3 times before giving up
+      retryDelayMs: 300, // Wait 300ms between retries
+    }
+  );
+
+  if (!result) {
+    throw new AppError(
+      "Unable to reserve tickets due to high concurrency. Please try again.",
+      StatusCodes.CONFLICT
+    );
+  }
+
+  return result;
 }

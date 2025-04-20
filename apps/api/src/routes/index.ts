@@ -10,7 +10,9 @@ import priceTierRoutes from "./priceTierRoutes";
 import seatSectionRoutes from "./seatSectionRoutes";
 import razorpayRoutes from "./razorpayRoutes";
 import { StatusCodes } from "http-status-codes";
-import cacheMiddleware from "../middlewares/cacheMiddleware";
+import cacheMiddleware, {
+  showCreationCacheInvalidation,
+} from "../middlewares/cacheMiddleware";
 import {
   authRateLimit,
   publicEndpointRateLimit,
@@ -47,7 +49,8 @@ router.use("/admin", generalRateLimit, adminRoutes);
 router.use(
   "/venues",
   publicEndpointRateLimit,
-  cacheMiddleware({ ttl: config.cache.venueTTL }),
+  showCreationCacheInvalidation(),  
+  cacheMiddleware({ ttl: config.cache.venueTTL }), 
   venueRoutes
 );
 
@@ -55,6 +58,7 @@ router.use(
 router.use(
   "/categories",
   publicEndpointRateLimit,
+  showCreationCacheInvalidation(),
   cacheMiddleware({ ttl: config.cache.categoryTTL }),
   categoryRoutes
 );
@@ -63,6 +67,7 @@ router.use(
 router.use(
   "/shows",
   publicEndpointRateLimit,
+  showCreationCacheInvalidation(),
   cacheMiddleware({ ttl: config.cache.showTTL }),
   showRoutes
 );
@@ -71,6 +76,7 @@ router.use(
 router.use(
   "/price-tiers",
   publicEndpointRateLimit,
+  showCreationCacheInvalidation(),
   cacheMiddleware({ ttl: config.cache.showTTL }),
   priceTierRoutes
 );
@@ -79,6 +85,7 @@ router.use(
 router.use(
   "/seat-sections",
   publicEndpointRateLimit,
+  showCreationCacheInvalidation(),
   cacheMiddleware({ ttl: config.cache.showTTL }),
   seatSectionRoutes
 );

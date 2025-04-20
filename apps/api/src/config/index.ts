@@ -48,10 +48,15 @@ export const config = {
     defaultTTL: parseInt(process.env.REDIS_DEFAULT_TTL || "3600", 10), // Default 1 hour
   },
   cache: {
-    showTTL: parseInt(process.env.CACHE_SHOW_TTL || "3600", 10), // 1 hour
-    venueTTL: parseInt(process.env.CACHE_VENUE_TTL || "7200", 10), // 2 hours
-    categoryTTL: parseInt(process.env.CACHE_CATEGORY_TTL || "86400", 10), // 24 hours
-    seatAvailabilityTTL: parseInt(process.env.CACHE_SEAT_TTL || "60", 10), // 1 minute
+    showTTL: parseInt(process.env.CACHE_SHOW_TTL || "60", 10), // Reduced to 1 minute (was 3600/1 hour)
+    venueTTL: parseInt(process.env.CACHE_VENUE_TTL || "300", 10), // Reduced to 5 minutes (was 7200/2 hours)
+    categoryTTL: parseInt(process.env.CACHE_CATEGORY_TTL || "600", 10), // Reduced to 10 minutes (was 86400/24 hours)
+    seatAvailabilityTTL: parseInt(process.env.CACHE_SEAT_TTL || "30", 10), // 30 seconds (was 60 seconds)
+
+    eventTTL: parseInt(process.env.CACHE_EVENT_TTL || "60", 10), // 1 minute
+    showtimeTTL: parseInt(process.env.CACHE_SHOWTIME_TTL || "60", 10), // 1 minute
+    priceTierTTL: parseInt(process.env.CACHE_PRICE_TIER_TTL || "60", 10), // 1 minute
+    seatSectionTTL: parseInt(process.env.CACHE_SEAT_SECTION_TTL || "60", 10), // 1 minute
   },
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || "60000", 10), // 1 minute

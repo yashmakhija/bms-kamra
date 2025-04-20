@@ -1,379 +1,374 @@
 # Book My Show API
 
-The backend API service for the Kunal Kamra (BMS) application, providing endpoints for venue, show, booking management, user authentication, and payment processing.
+The backend API service for the Kunal Kamra (BMS) application, providing a comprehensive platform for venue management, show ticketing, secure payments, and user experience.
 
-## Features
+## Core System Architecture
 
-- **Authentication & Authorization**
+The API follows a robust layered architecture:
 
-  - JWT-based authentication
+- **API Layer**: Express routes and controllers handling HTTP requests/responses
+- **Service Layer**: Business logic isolated from transport protocols
+- **Data Access Layer**: Prisma ORM with transaction support and optimized queries
+- **Infrastructure Layer**: Caching, queuing, and external service integrations
+
+## Key Features
+
+### Authentication & Authorization
+
+- **Multi-factor Authentication**:
+
+  - JWT-based authentication with refresh token rotation
+  - Social login (Google OAuth) with account linking
+  - Phone number verification via OTP
+  - Session management with device tracking
+
+- **Advanced Authorization**:
   - Role-based access control (SUPER_ADMIN, EDITOR, USER)
-  - Multiple authentication methods (email/password, Google OAuth, phone OTP)
+  - Resource-based permissions with ownership checks
+  - Fine-grained access control for admin operations
 
-- **Core Functionality**
+### Event & Venue Management
 
-  - Venue management
-  - Show and event management
-  - Booking and ticketing system
-  - User profile management
-  - Payment processing with Razorpay
+- **Venue System**:
 
-- **Production-Ready Features**
-  - Redis-based caching for high performance
-  - Distributed locking for concurrent operations
-  - Rate limiting to prevent abuse
-  - Request logging and monitoring
-  - Background job processing with Redis queues
-  - Comprehensive error handling
+  - Complete venue information management
+  - Seating arrangement configuration
+  - Capacity management with dynamic availability
+  - Venue-specific settings and rules
 
-## Tech Stack
+- **Show Management**:
+  - Hierarchical structure: Shows → Events → Showtimes
+  - Configurable price tiers with category mapping
+  - Custom seating sections with allocated capacities
+  - Show metadata and promotional content management
 
-- **Core**: Node.js, Express, TypeScript
-- **Database**: PostgreSQL with Prisma ORM
-- **Caching**: Redis/IORedis
-- **Queue System**: BullMQ
-- **Authentication**: JWT, bcrypt, Google OAuth, Twilio for SMS
-- **Payment Gateway**: Razorpay
-- **Logging**: Winston
-- **Security**: Helmet, CORS, Express Rate Limit
-- **Others**: Compression, HTTP Status Codes
+### Booking & Ticketing
 
-## Getting Started
+- **Reservation System**:
+
+  - Secure ticket reservation with anti-double booking
+  - Distributed locking for concurrent booking attempts
+  - Ticket status lifecycle management (AVAILABLE → RESERVED → SOLD/CANCELED)
+  - Time-limited booking holds with automatic expiration
+
+- **Ticket Management**:
+  - Multi-ticket purchase in single transaction
+  - Order history and ticket retrieval
+  - Cancellation with automatic inventory update
+  - Admin override capabilities for special cases
+
+### Payment Processing
+
+- **Razorpay Integration**:
+
+  - Secure payment flow with order creation and verification
+  - Cryptographic signature validation for transactions
+  - Webhook processing for automated payment status updates
+  - Payment metadata and tracking for reconciliation
+  - Refund processing with booking status synchronization
+
+- **Transaction Safety**:
+  - Atomic database transactions for payment-related operations
+  - Idempotent API design to prevent duplicate payments
+  - Consistent error handling with appropriate status codes
+  - Comprehensive logging for audit trails
+
+### Performance Optimization
+
+- **Multi-level Caching**:
+
+  - Redis-based caching with optimized TTL strategies
+  - Public data caching (venues, shows) with short TTLs (1-10 minutes)
+  - User data caching (profile, bookings) with shorter TTLs (5 minutes)
+  - Near real-time seat availability with very short TTLs (30 seconds)
+  - Automatic cache invalidation for data consistency
+
+- **Concurrency Control**:
+  - Redis-based distributed locking mechanism
+  - Lock acquisition with configurable retry strategies
+  - Transaction isolation levels for database operations
+  - Rate limiting to manage API load and prevent abuse
+
+### Resilience & Reliability
+
+- **Error Handling**:
+
+  - Centralized error management with typed error classes
+  - Consistent error responses with appropriate HTTP status codes
+  - Detailed error logging with contextual information
+  - Graceful degradation for non-critical service failures
+
+- **State Management**:
+  - Transactional state changes to ensure data consistency
+  - Automated cleanup of stale/abandoned bookings
+  - Background processing for non-critical operations
+  - Idempotent API design for safe retries
+
+## Technical Architecture
+
+### Database Schema
+
+The database schema is designed for performance and integrity:
+
+- **Core Entities**: Users, Venues, Shows, Events, Showtimes, Tickets, Bookings
+- **Supporting Entities**: Categories, PriceTiers, SeatSections, PaymentRecords
+- **Relationship Optimization**: Strategic use of indexes and foreign keys
+- **Data Integrity**: Transaction-based operations for related data
+
+### Caching Strategy
+
+The API implements a sophisticated caching approach:
+
+- **Cache Hierarchy**:
+
+  - L1: In-memory application cache for ultra-fast lookups
+  - L2: Redis-based distributed cache for cross-instance consistency
+  - L3: Database with query optimization
+
+- **Invalidation Patterns**:
+
+  - Event-driven cache invalidation on data mutations
+  - Time-based expiration with strategic TTLs
+  - Targeted invalidation to minimize cache thrashing
+  - Pattern-based invalidation for related entity groups
+
+- **Show Creation Flow**:
+  When creating shows and related entities, the system uses:
+  - Short TTLs (1 minute) to ensure data freshness
+  - Targeted invalidation when updating entities
+  - Global invalidation for consistent user experience
+
+### Concurrency Management
+
+The system handles high concurrency through:
+
+- **Ticket Reservation**:
+
+  - Atomic ticket status updates with optimistic locking
+  - Distributed Redis locks for cross-server consistency
+  - Transaction isolation to prevent race conditions
+  - Retry mechanisms with exponential backoff
+
+- **Inventory Management**:
+  - Real-time seat availability tracking
+  - Pessimistic locking for critical inventory operations
+  - Ticket status lifecycle enforcement
+  - Automatic inventory release for abandoned bookings
+
+### Security Measures
+
+- **Data Protection**:
+
+  - Password hashing with bcrypt and salt rotation
+  - PII (Personally Identifiable Information) handling per regulations
+  - HTTPS enforcement with proper CORS configuration
+  - Input sanitization against injection attacks
+
+- **API Security**:
+  - JWT with appropriate expiration and refresh strategy
+  - Rate limiting with IP and user-based throttling
+  - CSRF protection for browser-based clients
+  - Request validation middleware for all endpoints
+
+## API Integration
+
+### Authentication Flow
+
+The API supports multiple authentication methods:
+
+1. **Email/Password**: Traditional login with secure password handling
+2. **Google OAuth**: Social login with automatic account creation/linking
+3. **Phone OTP**: Mobile number verification with time-limited codes
+
+Authentication tokens (JWT) provide access to protected resources and include:
+
+- User identity (ID, name, email)
+- Role information for authorization
+- Token expiration and issuance metadata
+
+### Core Endpoints
+
+#### User Management
+
+- `/api/auth/*`: Authentication endpoints for all login methods
+- `/api/users/*`: User profile management, preferences, and history
+
+#### Content Management
+
+- `/api/venues/*`: Venue creation, management, and discovery
+- `/api/shows/*`: Show listings, details, and management
+- `/api/events/*`: Event scheduling and configuration
+- `/api/showtimes/*`: Specific showtime detail and availability
+
+#### Booking Flow
+
+- `/api/seat-sections/*`: Seat availability and section information
+- `/api/bookings/*`: Booking creation, retrieval, and management
+- `/api/razorpay/*`: Payment processing endpoints
+
+#### Admin Operations
+
+- `/api/admin/*`: Administrative functions for content and user management
+- `/api/stats/*`: System statistics and reporting
+
+### Razorpay Integration
+
+The payment flow integrates Razorpay securely:
+
+1. **Order Creation**:
+
+   - Client requests order for a booking
+   - Server creates Razorpay order and returns details
+   - Order linked to booking with pending status
+
+2. **Payment Processing**:
+
+   - Client completes payment using Razorpay checkout
+   - Server verifies payment signature cryptographically
+   - Booking status updated based on verification
+
+3. **Webhook Handling**:
+
+   - Razorpay sends webhook notifications for payment events
+   - Server validates webhook signature for security
+   - Payment status processed asynchronously for reliability
+   - Booking and ticket statuses updated accordingly
+
+4. **Refund Processing**:
+   - Admin initiates refund through dashboard
+   - Server processes refund through Razorpay API
+   - Booking status updated to reflect refund
+
+## Development & Deployment
 
 ### Prerequisites
 
 - Node.js (v18 or higher)
-- PostgreSQL
-- Redis (for caching and queues)
+- PostgreSQL (v14 or higher)
+- Redis (v6 or higher)
 - pnpm package manager
 
-### Installation
+### Environment Configuration
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   pnpm install
-   ```
-3. Copy `.env.example` to `.env` and update the configuration
-4. Start the development server:
-   ```bash
-   pnpm dev
-   ```
+The API requires several environment variables for proper operation:
 
-## Environment Variables
+- **Server**: `PORT`, `NODE_ENV`, `BASE_URL`, `CORS_ORIGIN`
+- **Authentication**: `JWT_SECRET`, `JWT_EXPIRES_IN`, `REFRESH_TOKEN_SECRET`
+- **Database**: `DATABASE_URL`, `DATABASE_POOL_SIZE`
+- **Redis**: `REDIS_URL`, `REDIS_PASSWORD`, `REDIS_CLUSTER_ENABLED`
+- **External Services**: Google OAuth, Twilio, and Razorpay credentials
 
-See `.env.example` for a list of required environment variables. Key configurations include:
+See `.env.example` for the complete list of required variables.
 
-- **Server**: `PORT`, `NODE_ENV`, `BASE_URL`
-- **Authentication**: `JWT_SECRET`, `JWT_EXPIRES_IN`
-- **Database**: `DATABASE_URL`
-- **Redis**: `REDIS_URL`, `REDIS_PASSWORD`, `REDIS_CLUSTER_ENABLED`, etc.
-- **Rate Limiting**: `RATE_LIMIT_WINDOW_MS`, `RATE_LIMIT_MAX`
-- **Logging**: `LOG_LEVEL`
-- **External Services**: Google OAuth and Twilio credentials
-- **Razorpay**: `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`
+### Local Development
 
-## API Structure
+```bash
+# Install dependencies
+pnpm install
 
-The API follows a structured approach:
+# Setup environment
+cp .env.example .env
+# Edit .env with your configuration
 
-- **Routes**: Define API endpoints and middleware
-- **Controllers**: Handle request/response logic
-- **Services**: Implement business logic and database operations
-- **Middlewares**: Handle cross-cutting concerns (auth, validation, caching)
-- **Utils**: Utility functions and helpers
+# Run database migrations
+pnpm db:migrate
 
-## Caching Strategy
+# Start development server
+pnpm dev
+```
 
-The API uses Redis for caching with the following strategies:
+### Production Deployment
 
-- **Public Data Caching**: Venues, shows, categories cached with TTL (1-24 hours)
-- **User Data Caching**: User profiles and bookings cached with short TTL (5 minutes)
-- **Seat Availability**: Near real-time caching with very short TTL (1 minute)
+The API is designed for containerized deployment:
 
-Cache invalidation is handled automatically when data is modified.
+- Docker-based deployment with multi-stage builds
+- Kubernetes-ready with health checks and graceful shutdown
+- Stateless architecture for horizontal scaling
+- Environment variable configuration for different environments
 
-## Rate Limiting
+## Performance Considerations
 
-Multiple rate limiting strategies are implemented:
+### Optimization Strategies
 
-- **General API Rate Limit**: 100 requests per minute per IP
-- **Authentication Endpoints**: 30 requests per 15 minutes per IP
-- **Public Endpoints**: 200 requests per minute per IP
+The API implements several optimization strategies:
 
-## Background Processing
+- **Query Optimization**: Strategic use of indexes and query planning
+- **Connection Pooling**: Database connection reuse for performance
+- **Batch Processing**: Batch operations for multiple records
+- **Compression**: HTTP response compression for bandwidth optimization
+- **Selective Field Retrieval**: Only retrieve required fields from database
 
-The API uses Redis-backed queues for:
+### Scaling Approach
 
-- **Email Sending**: Transactional emails for bookings, account changes
-- **Notifications**: User notifications for various events
-- **Reports**: Generation of administrative reports
-- **Booking Cleanup**: Automatic cleanup of expired/unpaid bookings
+The architecture supports horizontal scaling:
 
-## Monitoring and Logging
+- Stateless design for load balancer compatibility
+- Redis for distributed caching and locking
+- Database connection pooling for high throughput
+- Background job processing for CPU-intensive tasks
 
-- **Request Logging**: All API requests are logged with request ID, method, path, timing
-- **Error Logging**: Structured error logging with context
-- **Performance Tracking**: Slow responses are flagged
+## Monitoring & Operations
 
-## Deployment
+### Logging Strategy
 
-The API is designed for deployment in containerized environments:
+Comprehensive logging for operational visibility:
 
-- Graceful shutdown handling
-- Health check endpoint at `/health`
-- Configurable via environment variables
+- **Request Logging**: All API requests with correlation IDs
+- **Error Logging**: Detailed error tracking with stack traces
+- **Performance Logging**: Slow query and response time tracking
+- **Audit Logging**: Critical operations for security and compliance
+
+### Health Monitoring
+
+- `/health`: System health endpoint with component status
+- Database connectivity checks
+- Redis service availability monitoring
+- External service dependency status
+
+## Testing
+
+The codebase includes:
+
+- Unit tests for core business logic
+- Integration tests for API endpoints
+- Load tests for performance verification
+
+## Admin Features
+
+The API provides specialized endpoints for administrative operations:
+
+- Content management for shows, venues, and events
+- User management with role assignment
+- Manual booking operations (creation, modification, cancellation)
+- Payment management including refund processing
+- System statistics and reporting
+
+## Future Enhancements
+
+Areas identified for future development:
+
+- Enhanced analytics and reporting capabilities
+- Additional payment gateway integrations
+- Advanced seat selection visualization support
+- Waitlist functionality for sold-out shows
+- Notification system for booking updates and promotions
+
+## API Documentation
+
+A detailed Postman collection is included for testing and exploration:
+
+- Import `postman_collection.json` into Postman
+- Create an environment with `base_url` set to your API endpoint
+- Collection includes pre-request scripts for authentication
+
+---
 
 ## License
 
 This project is licensed under the ISC License.
 
-## API Documentation
+---
 
-The API server runs on port 3091 by default.
+## Contact
 
-### Authentication Endpoints
-
-#### Register User
-
-- **URL**: `/api/auth/register`
-- **Method**: POST
-- **Body**:
-  ```json
-  {
-    "name": "Test User",
-    "email": "testuser@example.com",
-    "password": "Password123!"
-  }
-  ```
-- **Response**: User object with authentication token
-
-#### Login
-
-- **URL**: `/api/auth/login`
-- **Method**: POST
-- **Body**:
-  ```json
-  {
-    "email": "testuser@example.com",
-    "password": "Password123!"
-  }
-  ```
-- **Response**: User object with authentication token
-
-#### Google Login
-
-- **URL**: `/api/auth/google`
-- **Method**: POST
-- **Body**:
-  ```json
-  {
-    "idToken": "GOOGLE_ID_TOKEN"
-  }
-  ```
-- **Response**: User object with authentication token
-- **Note**: Automatically creates a new account if the email doesn't exist
-
-#### Request Phone OTP
-
-- **URL**: `/api/auth/phone/request-otp`
-- **Method**: POST
-- **Body**:
-  ```json
-  {
-    "phone": "+919876543210"
-  }
-  ```
-- **Response**: Success message with OTP code (in development)
-
-#### Verify Phone OTP
-
-- **URL**: `/api/auth/phone/verify-otp`
-- **Method**: POST
-- **Body**:
-  ```json
-  {
-    "phone": "+919876543210",
-    "code": "123456"
-  }
-  ```
-- **Response**: User object with authentication token
-
-#### Verify Authentication
-
-- **URL**: `/api/auth/verify`
-- **Method**: GET
-- **Headers**:
-  - Authorization: `Bearer YOUR_JWT_TOKEN`
-- **Response**:
-  ```json
-  {
-    "authenticated": true,
-    "user": {
-      "id": "user_id",
-      "name": "User Name",
-      "email": "user@example.com",
-      "image": "https://example.com/profile.jpg",
-      "isAdmin": false
-    }
-  }
-  ```
-- **Error Response**: Returns 401 Unauthorized if the token is invalid or missing
-- **Note**: This endpoint is useful for frontend protected routes to verify authentication status
-
-### User Endpoints
-
-All user endpoints require authentication via Bearer token.
-
-#### Get Current User
-
-- **URL**: `/api/users/me`
-- **Method**: GET
-- **Headers**:
-  - Authorization: `Bearer YOUR_JWT_TOKEN`
-- **Response**: Complete user profile information
-
-#### Update Profile
-
-- **URL**: `/api/users/profile`
-- **Method**: PUT
-- **Headers**:
-  - Authorization: `Bearer YOUR_JWT_TOKEN`
-- **Body**:
-  ```json
-  {
-    "name": "Updated Name",
-    "image": "https://example.com/profile.jpg"
-  }
-  ```
-- **Response**: Updated user profile
-
-#### Change Password
-
-- **URL**: `/api/users/change-password`
-- **Method**: POST
-- **Headers**:
-  - Authorization: `Bearer YOUR_JWT_TOKEN`
-- **Body**:
-  ```json
-  {
-    "currentPassword": "Password123!",
-    "newPassword": "NewPassword123!"
-  }
-  ```
-- **Response**: Success message
-
-#### Delete Account
-
-- **URL**: `/api/users/account`
-- **Method**: DELETE
-- **Headers**:
-  - Authorization: `Bearer YOUR_JWT_TOKEN`
-- **Body**:
-  ```json
-  {
-    "password": "Password123!"
-  }
-  ```
-- **Response**: Success message
-
-### Health Check
-
-- **URL**: `/api/health`
-- **Method**: GET
-- **Response**: API status
-
-## Payment Processing
-
-The API uses Razorpay for processing payments with the following features:
-
-- Secure payment processing
-- Order creation and validation
-- Payment verification with cryptographic signatures
-- Webhook processing for payment confirmations
-- Automatic ticket status updates on successful payment
-
-### Razorpay Integration
-
-To use Razorpay:
-
-1. Create a Razorpay account and obtain API keys
-2. Set environment variables:
-   ```
-   RAZORPAY_KEY_ID=your_key_id
-   RAZORPAY_KEY_SECRET=your_key_secret
-   RAZORPAY_WEBHOOK_SECRET=your_webhook_secret
-   ```
-3. Configure webhook URL in Razorpay dashboard to point to:
-   ```
-   https://your-api-domain.com/api/razorpay/webhook
-   ```
-
-### Payment Endpoints
-
-#### Create Razorpay Order
-
-- **URL**: `/api/razorpay/orders/:bookingId`
-- **Method**: POST
-- **Authentication**: Required
-- **Response**:
-  ```json
-  {
-    "orderId": "order_12345abcdef",
-    "amount": 100000,
-    "currency": "INR",
-    "keyId": "rzp_test_your_key_id"
-  }
-  ```
-
-#### Verify Razorpay Payment
-
-- **URL**: `/api/razorpay/verify/:bookingId`
-- **Method**: POST
-- **Authentication**: Required
-- **Body**:
-  ```json
-  {
-    "razorpayPaymentId": "pay_12345abcdef",
-    "razorpayOrderId": "order_12345abcdef",
-    "razorpaySignature": "generated_signature_from_razorpay"
-  }
-  ```
-- **Response**: Booking object with updated payment status
-
-#### Razorpay Webhook (Server-to-Server)
-
-- **URL**: `/api/razorpay/webhook`
-- **Method**: POST
-- **Headers**: `x-razorpay-signature` (provided by Razorpay)
-- **Body**: Webhook payload from Razorpay
-- **Response**: Success message
-
-## Project Structure
-
-```
-src/
-├── config/           # Configuration settings
-├── controllers/      # Request handlers
-├── middlewares/      # Auth, validation and error handling
-├── routes/           # API routes definition
-├── services/         # Business logic
-├── types/            # TypeScript type definitions
-├── utils/            # Helper functions
-└── index.ts          # Entry point
-```
-
-## Testing with Postman
-
-A Postman collection is included in the project for easy testing:
-
-1. Import the `postman_collection.json` file into Postman
-2. Create an environment with a variable `base_url` set to `http://localhost:3091/api`
-3. The collection is configured to automatically save auth tokens from login responses
-
-## Development Notes
-
-- In development mode, OTP codes are returned in the API response for testing
-- JWT tokens expire after 7 days by default
-- For Twilio SMS to work properly, verify phone numbers in the Twilio console or upgrade from a trial account
-- API logs all database queries in development mode for debugging
+For questions or support, please contact the github.com/YashMakhija.

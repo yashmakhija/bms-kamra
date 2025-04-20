@@ -10,6 +10,48 @@ interface PaginationOptions {
 
 const logger = createServiceLogger("categoryService");
 
+// Fixed set of categories - we'll use these instead of creating new ones each time
+const DEFAULT_CATEGORIES = [
+  {
+    name: "VIP",
+    type: "VIP" as CategoryType,
+    description: "Premium experience with the best seats and services",
+  },
+  {
+    name: "PREMIUM",
+    type: "PREMIUM" as CategoryType,
+    description: "Great seats with excellent view and comfort",
+  },
+  {
+    name: "REGULAR",
+    type: "REGULAR" as CategoryType,
+    description: "Standard seating with good view",
+  },
+];
+
+/**
+ * Initialize default categories if they don't exist
+ * This should be called during app startup
+ */
+export const initializeDefaultCategories = async () => {
+  try {
+    for (const category of DEFAULT_CATEGORIES) {
+      const existingCategory = await prisma.category.findFirst({
+        where: { type: category.type, isActive: true },
+      });
+
+      if (!existingCategory) {
+        await prisma.category.create({ data: category });
+        logger.info(`Created default category: ${category.name}`);
+      }
+    }
+    logger.info("Default categories initialized");
+  } catch (error) {
+    logger.error("Error initializing default categories", { error });
+    throw error;
+  }
+};
+
 /**
  * Get all categories with pagination
  */
@@ -85,7 +127,42 @@ export const getCategoriesByType = async (
 };
 
 /**
+ * Get default category by type or create if it doesn't exist
+ * This should be used instead of creating new categories
+ */
+export const getDefaultCategoryByType = async (type: CategoryType) => {
+  try {
+    // Find existing category of the specified type
+    let category = await prisma.category.findFirst({
+      where: { type, isActive: true },
+    });
+
+    // If no category exists with this type, create one using our defaults
+    if (!category) {
+      const defaultCategory = DEFAULT_CATEGORIES.find((c) => c.type === type);
+      if (!defaultCategory) {
+        throw new Error(`No default configuration for category type: ${type}`);
+      }
+
+      category = await prisma.category.create({
+        data: defaultCategory,
+      });
+      logger.info(`Created default category for type: ${type}`);
+    }
+
+    return category;
+  } catch (error) {
+    logger.error(`Error getting/creating default category by type: ${type}`, {
+      error,
+    });
+    throw error;
+  }
+};
+
+/**
  * Create a new category
+ * Note: This is now restricted to admins and should rarely be used
+ * as we prefer using the default categories
  */
 export const createCategory = async (data: {
   name: string;
@@ -93,6 +170,16 @@ export const createCategory = async (data: {
   description?: string;
 }) => {
   try {
+    // First check if a category with this type already exists
+    const existingCategory = await prisma.category.findFirst({
+      where: { type: data.type, isActive: true },
+    });
+
+    if (existingCategory) {
+      logger.warn(`Attempted to create duplicate category type: ${data.type}`);
+      return existingCategory;
+    }
+
     return prisma.category.create({
       data,
     });

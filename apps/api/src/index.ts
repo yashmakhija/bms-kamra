@@ -11,6 +11,7 @@ import { generalRateLimit } from "./middlewares/rateLimitMiddleware";
 import { StatusCodes } from "http-status-codes";
 import { prisma } from "./lib/database";
 import checkDatabaseConnection from "./utils/dbCheck";
+import { initializeDefaultCategories } from "./services/categoryService";
 
 // Create application instance
 const app = express();
@@ -63,12 +64,26 @@ app.use((req: Request, res: Response) => {
 // Error handler
 app.use(loggingMiddleware.errorLoggingMiddleware);
 
+// Initialize database with default data
+const initializeData = async () => {
+  try {
+    // Initialize default categories (VIP, PREMIUM, REGULAR)
+    await initializeDefaultCategories();
+    serverLogger.info("Default data initialization completed successfully");
+  } catch (error) {
+    serverLogger.error("Error initializing default data", { error });
+  }
+};
+
 // Start the server
 const PORT = config.server.port;
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   serverLogger.info(
     `Server started in ${config.server.nodeEnv} mode on port ${PORT}`
   );
+
+  // Initialize default data after server starts
+  await initializeData();
 });
 
 // Set timeout for long-running requests

@@ -1,5 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import { getCache, setCache, default as redisClient } from "../utils/redis";
+import {
+  getCache,
+  setCache,
+  deleteCache,
+  deleteCachePattern,
+  default as redisClient,
+} from "../utils/redis";
 import { createServiceLogger } from "../utils/logger";
 import { config } from "../config";
 
@@ -148,6 +154,104 @@ export function invalidateCacheMiddleware(patterns: string[] = []) {
 }
 
 /**
+ * Specialized middleware for show creation flow to invalidate interrelated caches
+ * This ensures newly created entities are immediately available for the next steps
+ */
+export function showCreationCacheInvalidation() {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    // Only for non-GET requests
+    if (req.method === "GET") {
+      return next();
+    }
+
+    // Store original end method
+    const originalEnd = res.end;
+
+    // Override end method to invalidate cache after successful response
+    // @ts-ignore - Bypass type checking for the end method
+    res.end = function (this: Response, ...args: any[]): Response {
+      // Only invalidate cache for successful responses (created/updated)
+      if (res.statusCode >= 200 && res.statusCode < 300) {
+        // Determine which entity type was created/updated
+        let patternsToInvalidate: string[] = [];
+
+        // Extract IDs from request URL or body for more targeted invalidation
+        const { showId, eventId, venueId } = req.params;
+
+        // Handle different entity creation scenarios
+        if (req.originalUrl.includes("/venues")) {
+          // Venue created/updated
+          patternsToInvalidate = ["/venues"];
+          if (venueId) {
+            patternsToInvalidate.push(`/venues/${venueId}`);
+          }
+        } else if (req.originalUrl.includes("/shows")) {
+          // Show created/updated
+          patternsToInvalidate = ["/shows"];
+          if (showId) {
+            patternsToInvalidate.push(`/shows/${showId}`);
+          }
+          // Also invalidate venue caches as they include show counts
+          patternsToInvalidate.push("/venues");
+        } else if (req.originalUrl.includes("/events")) {
+          // Event created/updated
+          patternsToInvalidate = ["/events"];
+          if (eventId) {
+            patternsToInvalidate.push(`/events/${eventId}`);
+          }
+          // Invalidate parent show's events list
+          if (showId) {
+            patternsToInvalidate.push(`/shows/${showId}`);
+            patternsToInvalidate.push(`/shows/${showId}/events`);
+          }
+        } else if (req.originalUrl.includes("/showtimes")) {
+          // Showtime created/updated
+          patternsToInvalidate = ["/showtimes"];
+          if (eventId) {
+            patternsToInvalidate.push(`/events/${eventId}`);
+            patternsToInvalidate.push(`/events/${eventId}/showtimes`);
+          }
+        } else if (req.originalUrl.includes("/price-tiers")) {
+          // Price tier created/updated
+          patternsToInvalidate = ["/price-tiers"];
+          // Invalidate show price tiers
+          if (req.body && req.body.showId) {
+            patternsToInvalidate.push(`/shows/${req.body.showId}`);
+            patternsToInvalidate.push(`/shows/${req.body.showId}/price-tiers`);
+          }
+        } else if (req.originalUrl.includes("/seat-sections")) {
+          // Seat section created/updated
+          patternsToInvalidate = ["/seat-sections"];
+          // Invalidate showtime seat sections
+          if (req.body && req.body.showtimeId) {
+            patternsToInvalidate.push(`/showtimes/${req.body.showtimeId}`);
+            patternsToInvalidate.push(
+              `/showtimes/${req.body.showtimeId}/seat-sections`
+            );
+          }
+        }
+
+        // If patterns were identified, invalidate them for all users
+        if (patternsToInvalidate.length > 0) {
+          // For public entities, we need to invalidate for all users, not just the current one
+          invalidateGlobalCachePatterns(patternsToInvalidate).catch((err) => {
+            logger.error("Error invalidating show creation cache:", {
+              error: err.message,
+            });
+          });
+        }
+      }
+
+      // Call original end method with all arguments
+      // @ts-ignore - Bypass type checking for apply method with args
+      return originalEnd.apply(this, args);
+    };
+
+    next();
+  };
+}
+
+/**
  * Helper function to invalidate related cache keys
  */
 async function invalidateRelatedCacheKeys(userId: string, patterns: string[]) {
@@ -183,6 +287,30 @@ async function invalidateRelatedCacheKeys(userId: string, patterns: string[]) {
     }
   } catch (error) {
     logger.error("Error invalidating cache keys:", {
+      error: (error as Error).message,
+    });
+  }
+}
+
+/**
+ * Helper function to invalidate cache patterns globally for all users
+ * This is essential for public entities that might be cached for multiple users
+ */
+async function invalidateGlobalCachePatterns(patterns: string[]) {
+  try {
+    // For each pattern, find and delete all matching keys for all users
+    for (const pattern of patterns) {
+      // Create a Redis pattern that matches the URL pattern for any user
+      const redisPattern = `api:*:*${pattern}*`;
+      const keys = await redisClient.keys(redisPattern);
+
+      if (keys.length > 0) {
+        await redisClient.del(keys);
+        logger.debug(`Invalidated ${keys.length} keys for pattern ${pattern}`);
+      }
+    }
+  } catch (error) {
+    logger.error("Error invalidating global cache patterns:", {
       error: (error as Error).message,
     });
   }
