@@ -60,6 +60,7 @@ interface WizardState {
     updates: Partial<SeatSection>
   ) => void;
   addShowtime: (showtime: Showtime) => void;
+  setShowtimes: (showtimes: Showtime[]) => void;
 
   // Reset and submit
   resetWizard: () => void;
@@ -191,6 +192,8 @@ export const useWizardStore = create<WizardState>()(
         set((state) => ({
           showtimes: [...state.showtimes, showtime],
         })),
+
+      setShowtimes: (showtimes) => set({ showtimes }),
 
       // Reset and submit
       resetWizard: () =>

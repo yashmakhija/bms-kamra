@@ -5,7 +5,43 @@ import { useWizardStore } from "../../store/wizardStore";
 import { StepNavigation } from "./WizardLayout";
 import { apiClient, PriceTierCreateWithTypeInput } from "@repo/api-client";
 import { PriceTier as ApiPriceTier, Category } from "@repo/api-client";
-import { PriceTier } from "./types"; // Import the PriceTier interface from wizard types
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@repo/ui/components/ui/card";
+import { Input } from "@repo/ui/components/ui/input";
+import { Button } from "@repo/ui/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@repo/ui/components/ui/select";
+import { Label } from "@repo/ui/components/ui/label";
+import {
+  AlertCircle,
+  CircleDollarSign,
+  Loader2,
+  Plus,
+  Trash,
+  Tag,
+  InfoIcon,
+  BadgeCheck,
+} from "lucide-react";
+import { Alert, AlertDescription } from "@repo/ui/components/ui/alert";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@repo/ui/components/ui/tooltip";
+import { Badge } from "@repo/ui/components/ui/badge";
+import { ScrollArea } from "@repo/ui/components/ui/scroll-area";
+import { cn } from "@repo/ui/utils";
 
 // Updated interface to match the new API approach
 interface PriceTierForm {
@@ -109,6 +145,14 @@ export function PricingStep() {
         [name]: value,
       });
     }
+    setError(null);
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setForm({
+      ...form,
+      [name]: value,
+    });
     setError(null);
   };
 
@@ -290,208 +334,299 @@ export function PricingStep() {
   // Standard category types as per documentation
   const categoryTypes = ["VIP", "PREMIUM", "REGULAR"];
 
+  // Function to render the category badge with appropriate color
+  const getCategoryBadgeVariant = (type: string) => {
+    switch (type.toUpperCase()) {
+      case "VIP":
+        return "default";
+      case "PREMIUM":
+        return "secondary";
+      case "REGULAR":
+        return "outline";
+      default:
+        return "default";
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Pricing Tiers</h2>
-        <p className="text-muted-foreground">
-          Set up pricing tiers for your show
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Price Tier Form */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Add Price Tier</h3>
-
-            {!showId ? (
-              <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-md">
-                Please complete the previous steps first.
+    <Card className="border-none shadow-none">
+      <CardHeader className="px-0">
+        <CardTitle className="text-2xl font-bold">Pricing Tiers</CardTitle>
+        <CardDescription>Set up pricing tiers for your show</CardDescription>
+      </CardHeader>
+      <CardContent className="px-0">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Price Tier Form */}
+            <div className="space-y-5">
+              <div className="flex items-center">
+                <CircleDollarSign className="mr-2 h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">Add Price Tier</h3>
               </div>
-            ) : isLoading ? (
-              <div className="bg-muted/30 p-6 rounded-md flex flex-col items-center justify-center text-center">
-                <p className="text-muted-foreground">Loading price tiers...</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Category Type Selection */}
-                <div className="space-y-2">
-                  <label htmlFor="categoryType" className="text-sm font-medium">
-                    Category Type <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    id="categoryType"
-                    name="categoryType"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    value={form.categoryType}
-                    onChange={handleInputChange}
-                  >
-                    {categoryTypes.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </select>
+
+              {!showId ? (
+                <Alert variant="default">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Please complete the previous steps first.
+                  </AlertDescription>
+                </Alert>
+              ) : isLoading ? (
+                <div className="bg-muted/30 p-6 rounded-md flex flex-col items-center justify-center text-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mb-2" />
+                  <p className="text-muted-foreground">
+                    Loading price tiers...
+                  </p>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Price */}
+              ) : (
+                <div className="space-y-4">
+                  {/* Category Type Selection */}
                   <div className="space-y-2">
-                    <label htmlFor="price" className="text-sm font-medium">
-                      Price <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      id="price"
-                      name="price"
-                      type="number"
-                      min="1"
-                      step="1"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      value={form.price}
+                    <Label htmlFor="categoryType" className="font-medium">
+                      Category Type <span className="text-destructive">*</span>
+                    </Label>
+                    <Select
+                      value={form.categoryType}
+                      onValueChange={(value) =>
+                        handleSelectChange("categoryType", value)
+                      }
+                    >
+                      <SelectTrigger id="categoryType">
+                        <SelectValue placeholder="Select a category type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categoryTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            <div className="flex items-center">
+                              <Badge
+                                variant={getCategoryBadgeVariant(type)}
+                                className="mr-2"
+                              >
+                                {type}
+                              </Badge>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Price */}
+                    <div className="space-y-2">
+                      <Label htmlFor="price" className="font-medium">
+                        Price <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        {form.currency === "USD" ? (
+                          <CircleDollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        ) : form.currency === "EUR" ? (
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground flex items-center justify-center">€</span>
+                        ) : form.currency === "GBP" ? (
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground flex items-center justify-center">£</span>
+                        ) : (
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground flex items-center justify-center">₹</span>
+                        )}
+                        <Input
+                          id="price"
+                          name="price"
+                          type="number"
+                          min="1"
+                          step="1"
+                          value={form.price}
+                          onChange={handleInputChange}
+                          className="pl-8"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Currency */}
+                    <div className="space-y-2">
+                      <Label htmlFor="currency" className="font-medium">
+                        Currency <span className="text-destructive">*</span>
+                      </Label>
+                      <Select
+                        value={form.currency}
+                        onValueChange={(value) =>
+                          handleSelectChange("currency", value)
+                        }
+                      >
+                        <SelectTrigger id="currency">
+                          <SelectValue placeholder="Select a currency" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="INR">INR</SelectItem>
+                          <SelectItem value="USD">USD</SelectItem>
+                          <SelectItem value="EUR">EUR</SelectItem>
+                          <SelectItem value="GBP">GBP</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-2">
+                    <Label htmlFor="description" className="font-medium">
+                      Description
+                    </Label>
+                    <Input
+                      id="description"
+                      name="description"
+                      value={form.description}
                       onChange={handleInputChange}
+                      placeholder="E.g., Premium seats, VIP section, etc."
                     />
                   </div>
 
-                  {/* Currency */}
-                  <div className="space-y-2">
-                    <label htmlFor="currency" className="text-sm font-medium">
-                      Currency <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="currency"
-                      name="currency"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      value={form.currency}
-                      onChange={handleInputChange}
-                    >
-                      <option value="INR">INR</option>
-                      <option value="USD">USD</option>
-                      <option value="EUR">EUR</option>
-                      <option value="GBP">GBP</option>
-                    </select>
-                  </div>
-                </div>
+                  {error && (
+                    <Alert variant="destructive" className="py-2">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
 
-                {/* Description */}
-                <div className="space-y-2">
-                  <label htmlFor="description" className="text-sm font-medium">
-                    Description
-                  </label>
-                  <input
-                    id="description"
-                    name="description"
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    value={form.description}
-                    onChange={handleInputChange}
-                    placeholder="E.g., Premium seats, VIP section, etc."
-                  />
-                </div>
-
-                {error && <p className="text-sm text-red-500">{error}</p>}
-
-                <div>
-                  <button
+                  <Button
                     type="button"
                     onClick={handleAddPriceTier}
-                    className="px-4 py-2 bg-primary text-black rounded-md hover:bg-primary/80"
+                    className="w-full"
                   >
+                    <Plus className="mr-2 h-4 w-4" />
                     Add Price Tier
-                  </button>
+                  </Button>
+                </div>
+              )}
+
+              {/* Instructions */}
+              <div className="mt-6 bg-muted/40 rounded-md p-4 flex items-start">
+                <InfoIcon className="h-5 w-5 text-muted-foreground mr-3 mt-0.5" />
+                <div className="text-sm text-muted-foreground">
+                  <p className="font-medium mb-1">Tips:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>
+                      Create price tiers for each category type (VIP, PREMIUM,
+                      REGULAR)
+                    </li>
+                    <li>
+                      Each price tier defines pricing for a specific category
+                      type
+                    </li>
+                    <li>
+                      Price tiers will be used to create seating sections in the
+                      next step
+                    </li>
+                    <li>You need at least one price tier to proceed</li>
+                  </ul>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Instructions */}
-            <div className="mt-6 bg-muted/30 p-4 rounded-md">
-              <h4 className="text-sm font-medium mb-2">Tips:</h4>
-              <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">
-                <li>
-                  Create price tiers for each category type (VIP, PREMIUM,
-                  REGULAR)
-                </li>
-                <li>
-                  Each price tier defines pricing for a specific category type
-                </li>
-                <li>
-                  Price tiers will be used to create seating sections in the
-                  next step
-                </li>
-                <li>You need at least one price tier to proceed</li>
-              </ul>
+            {/* Added Price Tiers List */}
+            <div>
+              <div className="flex items-center mb-4">
+                <Tag className="mr-2 h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">Added Price Tiers</h3>
+              </div>
+
+              {priceTiers.length === 0 ? (
+                <div className="bg-muted/30 p-6 rounded-md flex flex-col items-center justify-center text-center h-[250px]">
+                  <CircleDollarSign className="h-12 w-12 text-muted-foreground opacity-20 mb-3" />
+                  <p className="text-muted-foreground font-medium">
+                    No price tiers added yet
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Add price tiers using the form on the left
+                  </p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[350px] pr-4">
+                  <div className="space-y-3">
+                    {priceTiers.map((tier) => (
+                      <Card
+                        key={
+                          tier.id || `tier-${tier.categoryType}-${tier.price}`
+                        }
+                        className={cn(
+                          "border overflow-hidden transition-all hover:shadow-md",
+                          tier.id && tier.id.startsWith("temp-")
+                            ? "border-primary/30 bg-primary/5"
+                            : ""
+                        )}
+                      >
+                        <CardContent className="p-4 flex justify-between items-center">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <Badge
+                                variant={getCategoryBadgeVariant(
+                                  tier.categoryType
+                                )}
+                              >
+                                {tier.categoryType}
+                              </Badge>
+                              {tier.id && tier.id.startsWith("temp-") ? (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-primary/10 text-primary"
+                                >
+                                  Not saved
+                                </Badge>
+                              ) : (
+                                <Badge
+                                  variant="outline"
+                                  className="bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400"
+                                >
+                                  <BadgeCheck className="h-3 w-3 mr-1" />
+                                  Saved
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-lg font-bold mt-1">
+                              {tier.price} {tier.currency}
+                            </p>
+                            {tier.description && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {tier.description}
+                              </p>
+                            )}
+                          </div>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive/60 hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() =>
+                                    tier.id && handleRemovePriceTier(tier.id)
+                                  }
+                                  disabled={!tier.id}
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Remove price tier</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
             </div>
           </div>
 
-          {/* Added Price Tiers List */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Added Price Tiers</h3>
-
-            {priceTiers.length === 0 ? (
-              <div className="bg-muted/30 p-6 rounded-md flex flex-col items-center justify-center text-center">
-                <p className="text-muted-foreground">
-                  No price tiers added yet
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Add price tiers using the form on the left
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {priceTiers.map((tier) => (
-                  <div
-                    key={tier.id || `tier-${tier.categoryType}-${tier.price}`}
-                    className="flex justify-between items-center p-3 rounded-md border bg-card"
-                  >
-                    <div>
-                      <p className="font-medium">
-                        {tier.name}
-                        {tier.id && tier.id.startsWith("temp-") && (
-                          <span className="ml-2 text-xs text-amber-500">
-                            (Not saved)
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {tier.price} {tier.currency}
-                        {tier.description ? ` - ${tier.description}` : ""}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => tier.id && handleRemovePriceTier(tier.id)}
-                      className="p-1 text-muted-foreground hover:text-red-500"
-                      title="Remove price tier"
-                      disabled={!tier.id}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Step Navigation */}
-        <StepNavigation
-          onSave={handleSave}
-          isLoading={isSubmitting}
-          isDisabled={priceTiers.length === 0 || !showId}
-          showBack={true}
-        />
-      </form>
-    </div>
+          {/* Step Navigation */}
+          <StepNavigation
+            onSave={handleSave}
+            isLoading={isSubmitting}
+            isDisabled={priceTiers.length === 0 || !showId}
+            showBack={true}
+          />
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 

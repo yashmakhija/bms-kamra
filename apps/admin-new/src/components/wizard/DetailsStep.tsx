@@ -5,12 +5,44 @@ import { useWizardStore } from "../../store/wizardStore";
 import { apiClient } from "@repo/api-client";
 import { Venue } from "@repo/api-client";
 import { StepNavigation } from "./WizardLayout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@repo/ui/components/ui/card";
+import { Input } from "@repo/ui/components/ui/input";
+import { Textarea } from "@repo/ui/components/ui/textarea";
+import { Button } from "@repo/ui/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@repo/ui/components/ui/select";
+import { Label } from "@repo/ui/components/ui/label";
+import { Switch } from "@repo/ui/components/ui/switch";
+import {
+  AlertCircle,
+  Building2,
+  Clock,
+  InfoIcon,
+  Loader2,
+  Image,
+} from "lucide-react";
+import { Alert, AlertDescription } from "@repo/ui/components/ui/alert";
+import { cn } from "@repo/ui/utils";
 
 interface FormErrors {
   name?: string;
   description?: string;
   venue?: string;
   duration?: string;
+  image?: string;
+  ageLimit?: string;
+  language?: string;
 }
 
 export function DetailsStep() {
@@ -40,7 +72,7 @@ export function DetailsStep() {
       try {
         // Fetch venues
         const venuesData = await apiClient.getAllVenues();
-        console.log("Venues data:", venuesData); // Log the data to see its structure
+        console.log("Venues data:", venuesData);
 
         // Handle different possible response structures
         if (Array.isArray(venuesData)) {
@@ -103,6 +135,18 @@ export function DetailsStep() {
       newErrors.duration = "Duration must be at least 1 minute";
     }
 
+    if (!showDetails.image) {
+      newErrors.image = "Image is required";
+    }
+
+    if (!showDetails.ageLimit) {
+      newErrors.ageLimit = "Age limit is required";
+    }
+
+    if (!showDetails.language) {
+      newErrors.language = "Language is required";
+    }
+
     setErrors(newErrors);
     // Mark all fields as touched to show all errors
     const allTouched = Object.keys(newErrors).reduce(
@@ -132,9 +176,20 @@ export function DetailsStep() {
     }
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    updateShowDetails({ [name]: checked });
+  const handleSelectChange = (name: string, value: string) => {
+    updateShowDetails({ [name]: value });
+
+    // Mark field as touched
+    setTouched({ ...touched, [name]: true });
+
+    // Clear error
+    if (errors[name as keyof FormErrors]) {
+      setErrors({ ...errors, [name]: undefined });
+    }
+  };
+
+  const handleCheckboxChange = (checked: boolean) => {
+    updateShowDetails({ isPublic: checked });
   };
 
   const handleSave = async () => {
@@ -148,6 +203,9 @@ export function DetailsStep() {
       description: showDetails.description,
       venueId: showDetails.venue,
       duration: showDetails.duration || 120,
+      imageUrl: showDetails.image,
+      ageLimit: showDetails.ageLimit,
+      language: showDetails.language,
     };
 
     try {
@@ -218,152 +276,275 @@ export function DetailsStep() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Show Details</h2>
-        <p className="text-muted-foreground">
+    <Card className="border-none shadow-none">
+      <CardHeader className="px-0">
+        <CardTitle className="text-2xl font-bold">Show Details</CardTitle>
+        <CardDescription>
           Provide basic information about your show
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Show Name */}
-        <div className="space-y-2">
-          <label htmlFor="name" className="text-sm font-medium">
-            Show Name <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            className={`w-full px-3 py-2 border rounded-md ${
-              touched.name && errors.name ? "border-red-500" : "border-gray-300"
-            }`}
-            value={showDetails.name || ""}
-            onChange={handleInputChange}
-            placeholder="Enter show name"
-          />
-          {touched.name && errors.name && (
-            <p className="text-xs text-red-500">{errors.name}</p>
-          )}
-        </div>
-
-        {/* Description */}
-        <div className="space-y-2">
-          <label htmlFor="description" className="text-sm font-medium">
-            Description <span className="text-red-500">*</span>
-          </label>
-          <textarea
-            id="description"
-            name="description"
-            rows={3}
-            className={`w-full px-3 py-2 border rounded-md ${
-              touched.description && errors.description
-                ? "border-red-500"
-                : "border-gray-300"
-            }`}
-            value={showDetails.description || ""}
-            onChange={handleInputChange}
-            placeholder="Write a short description of the show"
-          />
-          {touched.description && errors.description && (
-            <p className="text-xs text-red-500">{errors.description}</p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Venue */}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-0">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Show Name */}
           <div className="space-y-2">
-            <label htmlFor="venue" className="text-sm font-medium">
-              Venue <span className="text-red-500">*</span>
-            </label>
-            <select
-              id="venue"
-              name="venue"
-              className={`w-full px-3 py-2 border rounded-md ${
-                touched.venue && errors.venue
-                  ? "border-red-500"
-                  : "border-gray-300"
-              }`}
-              value={showDetails.venue || ""}
+            <Label htmlFor="name" className="font-medium">
+              Show Name <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="name"
+              name="name"
+              value={showDetails.name || ""}
               onChange={handleInputChange}
-              disabled={isPageLoading || venuesList.length === 0}
-            >
-              <option value="">Select a venue</option>
-              {venuesList.map((venue) => (
-                <option key={venue.id} value={venue.id}>
-                  {venue.name} {venue.city ? `(${venue.city})` : ""}
-                </option>
-              ))}
-            </select>
-            {touched.venue && errors.venue && (
-              <p className="text-xs text-red-500">{errors.venue}</p>
-            )}
-            {venuesError && (
-              <div className="mt-2 flex flex-col space-y-2">
-                <p className="text-xs text-amber-600">{venuesError}</p>
-                <button
-                  type="button"
-                  onClick={createDummyVenue}
-                  className="text-xs py-1 px-2 bg-amber-500 text-white rounded-md hover:bg-amber-600 w-fit"
-                  disabled={isPageLoading}
-                >
-                  {isPageLoading ? "Creating..." : "Create a sample venue"}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Duration */}
-          <div className="space-y-2">
-            <label htmlFor="duration" className="text-sm font-medium">
-              Duration (min) <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="duration"
-              name="duration"
-              type="number"
-              min="1"
-              className={`w-full px-3 py-2 border rounded-md ${
-                touched.duration && errors.duration
-                  ? "border-red-500"
-                  : "border-gray-300"
-              }`}
-              value={showDetails.duration || ""}
-              onChange={handleInputChange}
-              placeholder="Enter duration in minutes"
+              placeholder="Enter show name"
+              className={cn(
+                touched.name && errors.name && "border-destructive"
+              )}
             />
-            {touched.duration && errors.duration && (
-              <p className="text-xs text-red-500">{errors.duration}</p>
+            {touched.name && errors.name && (
+              <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                <AlertCircle size={12} />
+                {errors.name}
+              </p>
             )}
           </div>
-        </div>
 
-        {/* Publish Checkbox */}
-        <div className="flex items-center space-x-2">
-          <input
-            id="isPublic"
-            name="isPublic"
-            type="checkbox"
-            className="rounded border-gray-300"
-            checked={showDetails.isPublic || false}
-            onChange={handleCheckboxChange}
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description" className="font-medium">
+              Description <span className="text-destructive">*</span>
+            </Label>
+            <Textarea
+              id="description"
+              name="description"
+              rows={3}
+              value={showDetails.description || ""}
+              onChange={handleInputChange}
+              placeholder="Write a short description of the show"
+              className={cn(
+                touched.description &&
+                  errors.description &&
+                  "border-destructive"
+              )}
+            />
+            {touched.description && errors.description && (
+              <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                <AlertCircle size={12} />
+                {errors.description}
+              </p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Venue */}
+            <div className="space-y-2">
+              <Label htmlFor="venue" className="font-medium">
+                Venue <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={showDetails.venue || ""}
+                onValueChange={(value) => handleSelectChange("venue", value)}
+                disabled={isPageLoading || venuesList.length === 0}
+              >
+                <SelectTrigger
+                  id="venue"
+                  className={cn(
+                    touched.venue && errors.venue && "border-destructive",
+                    isPageLoading && "opacity-70"
+                  )}
+                >
+                  <SelectValue placeholder="Select a venue" />
+                </SelectTrigger>
+                <SelectContent>
+                  {venuesList.map((venue) => (
+                    <SelectItem key={venue.id} value={venue.id}>
+                      {venue.name} {venue.city ? `(${venue.city})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {touched.venue && errors.venue && (
+                <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                  <AlertCircle size={12} />
+                  {errors.venue}
+                </p>
+              )}
+              {venuesError && (
+                <div className="mt-2 space-y-2">
+                  <Alert variant="destructive" className="py-2">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="ml-2">
+                      {venuesError}
+                    </AlertDescription>
+                  </Alert>
+                  <Button
+                    type="button"
+                    onClick={createDummyVenue}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    disabled={isPageLoading}
+                  >
+                    {isPageLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Building2 className="mr-2 h-4 w-4" />
+                        Create a sample venue
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Duration */}
+            <div className="space-y-2">
+              <Label htmlFor="duration" className="font-medium">
+                Duration (min) <span className="text-destructive">*</span>
+              </Label>
+              <div className="relative">
+                <Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="duration"
+                  name="duration"
+                  type="number"
+                  min="1"
+                  value={showDetails.duration || ""}
+                  onChange={handleInputChange}
+                  placeholder="Enter duration in minutes"
+                  className={cn(
+                    "pl-8",
+                    touched.duration && errors.duration && "border-destructive"
+                  )}
+                />
+              </div>
+              {touched.duration && errors.duration && (
+                <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                  <AlertCircle size={12} />
+                  {errors.duration}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="ageLimit" className="font-medium">
+                Age Limit <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="ageLimit"
+                value={showDetails.ageLimit || ""}
+                name="ageLimit"
+                onChange={handleInputChange}
+                placeholder="Enter age limit"
+                className={cn(
+                  "pl-8",
+                  touched.ageLimit && errors.ageLimit && "border-destructive"
+                )}
+              />
+              {touched.ageLimit && errors.ageLimit && (
+                <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                  <AlertCircle size={12} />
+                  {errors.ageLimit}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label htmlFor="language" className="font-medium">
+                Language <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="language"
+                value={showDetails.language || ""}
+                name="language"
+                onChange={handleInputChange}
+                placeholder="Enter language"
+              />
+              {touched.language && errors.language && (
+                <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                  <AlertCircle size={12} />
+                  {errors.language}
+                </p>
+              )}
+            </div>
+
+            {/* Image */}
+            <div className="space-y-2">
+              <Label htmlFor="image" className="font-medium">
+                Image URL <span className="text-destructive">*</span>
+              </Label>
+              <div className="relative">
+                <Image className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="image"
+                  name="image"
+                  type="text"
+                  value={showDetails.image || ""}
+                  onChange={handleInputChange}
+                  placeholder="Enter image URL"
+                  className={cn(
+                    "pl-8",
+                    touched.image && errors.image && "border-destructive"
+                  )}
+                />
+              </div>
+              {touched.image && errors.image && (
+                <p className="text-xs text-destructive flex items-center gap-1 mt-1">
+                  <AlertCircle size={12} />
+                  {errors.image}
+                </p>
+              )}
+              {showDetails.image && (
+                <div className="mt-2 right-8">
+                  <p className="text-sm text-muted-foreground mb-1 font-bold">
+                    Preview:
+                  </p>
+                  <img
+                    src={showDetails.image}
+                    alt="Show preview"
+                    className="w-full h-auto object-cover rounded-md border"
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "https://placehold.co/400x200?text=Invalid+Image+URL";
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-muted/40 rounded-md p-4 flex items-start">
+            <InfoIcon className="h-5 w-5 text-muted-foreground mr-3 mt-0.5" />
+            <div className="text-sm text-muted-foreground">
+              <p className="font-medium mb-1">
+                Tips for creating a great show:
+              </p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>
+                  Use a clear, descriptive name that captures your show's
+                  essence
+                </li>
+                <li>
+                  Provide a detailed description to help attendees understand
+                  what to expect
+                </li>
+                <li>Set an accurate duration to help with scheduling</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Step Navigation */}
+          <StepNavigation
+            onSave={handleSave}
+            isLoading={isSubmitting}
+            isDisabled={venuesList.length === 0}
+            nextLabel="Save & Continue"
+            showBack={false}
           />
-          <label htmlFor="isPublic" className="text-sm font-medium">
-            Make this show public immediately
-          </label>
-        </div>
-
-        {/* Use the StepNavigation component for consistent navigation */}
-        <StepNavigation
-          onSave={handleSave}
-          isLoading={isSubmitting}
-          isDisabled={venuesList.length === 0}
-          nextLabel="Save & Continue"
-          showBack={false}
-        />
-      </form>
-    </div>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 

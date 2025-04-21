@@ -6,6 +6,35 @@ import { Event } from "../wizard/types";
 import { format, isValid, parse, isBefore, addDays } from "date-fns";
 import { StepNavigation } from "./WizardLayout";
 import { apiClient } from "@repo/api-client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@repo/ui/components/ui/card";
+import { Input } from "@repo/ui/components/ui/input";
+import { Button } from "@repo/ui/components/ui/button";
+import { Calendar } from "@repo/ui/components/ui/calendar";
+import {
+  AlertCircle,
+  Calendar as CalendarIcon,
+  PlusCircle,
+  InfoIcon,
+  CalendarDaysIcon,
+  Trash2,
+  Loader2,
+} from "lucide-react";
+import { Alert, AlertDescription } from "@repo/ui/components/ui/alert";
+import { ScrollArea } from "@repo/ui/components/ui/scroll-area";
+import { cn } from "@repo/ui/utils";
+import { Badge } from "@repo/ui/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@repo/ui/components/ui/tooltip";
 
 export function EventsStep() {
   const {
@@ -201,130 +230,185 @@ export function EventsStep() {
   const hasEvents = eventList.length > 0;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Event Dates</h2>
-        <p className="text-muted-foreground">
+    <Card className="border-none shadow-none">
+      <CardHeader className="px-0">
+        <CardTitle className="text-2xl font-bold">Event Dates</CardTitle>
+        <CardDescription>
           Add dates when this show will be performed
-        </p>
-      </div>
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-0">
+        {!showId && (
+          <Alert variant="default" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Please complete the show details step first before adding events.
+            </AlertDescription>
+          </Alert>
+        )}
 
-      {!showId && (
-        <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-md mb-4">
-          Please complete the show details step first before adding events.
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Date Input Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Add Event Date</h3>
-            <div className="flex space-x-2">
-              <input
-                type="date"
-                value={dateString}
-                onChange={handleDateChange}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
-                min={format(new Date(), "yyyy-MM-dd")}
-                disabled={!showId}
-              />
-              <button
-                type="button"
-                onClick={handleAddEvent}
-                className="px-4 py-2 bg-primary text-black rounded-md hover:bg-primary/80"
-                disabled={!selectedDate || !showId}
-              >
-                Add
-              </button>
-            </div>
-            {error && <p className="text-sm text-red-500">{error}</p>}
-
-            {/* Instructions */}
-            <div className="mt-6 bg-muted/30 p-4 rounded-md">
-              <h4 className="text-sm font-medium mb-2">Tips:</h4>
-              <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">
-                <li>Add each date your show will be performed</li>
-                <li>
-                  You'll be able to add specific showtimes for each date later
-                </li>
-                <li>You can add multiple dates for recurring shows</li>
-                <li>Dates must be in the future</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Added Events List */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Added Event Dates</h3>
-            {!hasEvents ? (
-              <div className="bg-muted/30 p-6 rounded-md flex flex-col items-center justify-center text-center">
-                <p className="text-muted-foreground">
-                  No event dates added yet
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Add dates using the form on the left
-                </p>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Date Input Section */}
+            <div className="space-y-5">
+              <div className="flex items-center">
+                <CalendarIcon className="mr-2 h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">Add Event Date</h3>
               </div>
-            ) : (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {eventList
-                  .sort(
-                    (a, b) =>
-                      new Date(a.date).getTime() - new Date(b.date).getTime()
-                  )
-                  .map((event) => (
-                    <div
-                      key={event.id}
-                      className="flex justify-between items-center p-3 rounded-md border bg-card"
-                    >
-                      <div>
-                        <p className="font-medium">
-                          {format(new Date(event.date), "EEEE")}
-                          {event.id.startsWith("temp-") && (
-                            <span className="ml-2 text-xs text-amber-500">
-                              (Not saved)
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {format(new Date(event.date), "MMMM d, yyyy")}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => handleRemoveEvent(event.id)}
-                        className="p-1 text-muted-foreground hover:text-red-500"
-                        title="Remove event"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </button>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div className="border rounded-md p-3 bg-card">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate || undefined}
+                    onSelect={(day) => setSelectedDate(day || null)}
+                    disabled={(date) => isBefore(date, new Date())}
+                    className="mx-auto"
+                    initialFocus
+                  />
+                  
+                  <div className="mt-4 flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      {selectedDate ? (
+                        <span className="font-medium text-foreground">
+                          {format(selectedDate, "PPP")}
+                        </span>
+                      ) : (
+                        "Select a date"
+                      )}
                     </div>
-                  ))}
+                    <Button
+                      type="button"
+                      onClick={handleAddEvent}
+                      disabled={!selectedDate || !showId}
+                      className="ml-auto"
+                    >
+                      <PlusCircle className="h-4 w-4 mr-2" />
+                      Add Event
+                    </Button>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* Step Navigation */}
-        <StepNavigation
-          onSave={handleSave}
-          isLoading={isSubmitting}
-          isDisabled={!hasEvents || !showId}
-          showBack={true}
-        />
-      </form>
-    </div>
+              {error && (
+                <Alert variant="destructive" className="py-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {/* Instructions */}
+              <div className="mt-6 bg-muted/40 rounded-md p-4 flex items-start">
+                <InfoIcon className="h-5 w-5 text-muted-foreground mr-3 mt-0.5" />
+                <div className="text-sm text-muted-foreground">
+                  <p className="font-medium mb-1">Tips:</p>
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Add each date your show will be performed</li>
+                    <li>
+                      You'll be able to add specific showtimes for each date
+                      later
+                    </li>
+                    <li>You can add multiple dates for recurring shows</li>
+                    <li>Dates must be in the future</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Added Events List */}
+            <div>
+              <div className="flex items-center mb-4">
+                <CalendarDaysIcon className="mr-2 h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">Added Event Dates</h3>
+              </div>
+
+              {!hasEvents ? (
+                <div className="bg-muted/30 p-6 rounded-md flex flex-col items-center justify-center text-center h-[250px]">
+                  <CalendarIcon className="h-12 w-12 text-muted-foreground opacity-20 mb-3" />
+                  <p className="text-muted-foreground font-medium">
+                    No event dates added yet
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Add dates using the form on the left
+                  </p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[300px] pr-4">
+                  <div className="space-y-3">
+                    {eventList
+                      .sort(
+                        (a, b) =>
+                          new Date(a.date).getTime() -
+                          new Date(b.date).getTime()
+                      )
+                      .map((event) => (
+                        <Card
+                          key={event.id}
+                          className={cn(
+                            "border overflow-hidden transition-all hover:shadow-md",
+                            event.id.startsWith("temp-")
+                              ? "border-primary/30 bg-primary/5"
+                              : ""
+                          )}
+                        >
+                          <CardContent className="p-4 flex justify-between items-center">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <Badge
+                                  variant="outline"
+                                  className="bg-primary/10 text-primary"
+                                >
+                                  {format(new Date(event.date), "EEEE")}
+                                </Badge>
+                                {event.id.startsWith("temp-") && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-amber-600 border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800"
+                                  >
+                                    Not saved
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-sm mt-1 font-medium">
+                                {format(new Date(event.date), "MMMM d, yyyy")}
+                              </p>
+                            </div>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-destructive/60 hover:text-destructive hover:bg-destructive/10"
+                                    onClick={() => handleRemoveEvent(event.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Remove event</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </div>
+          </div>
+
+          {/* Step Navigation */}
+          <StepNavigation
+            onSave={handleSave}
+            isLoading={isSubmitting}
+            isDisabled={!hasEvents || !showId}
+            showBack={true}
+          />
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 

@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useWizardStore } from "../../store/wizardStore";
 import { WizardStepId } from "./types";
+import { CheckIcon, ChevronLeftIcon, ArrowRightIcon } from "lucide-react";
 
 interface WizardStep {
   id: WizardStepId;
   label: string;
   description: string;
+  icon?: React.ReactNode;
 }
 
 const WIZARD_STEPS: WizardStep[] = [
@@ -42,6 +44,11 @@ const WIZARD_STEPS: WizardStep[] = [
     description: "Review and publish the show",
   },
 ];
+
+// Helper function to conditionally join classNames
+const cn = (...classes: (string | boolean | undefined)[]) => {
+  return classes.filter(Boolean).join(" ");
+};
 
 // Step navigation props
 interface StepNavigationProps {
@@ -85,14 +92,15 @@ export function StepNavigation({
   };
 
   return (
-    <div className="flex justify-between pt-6 mt-8 border-t">
+    <div className="flex justify-between pt-6 mt-6 border-t border-gray-100 bg-gray-50/50 p-4 rounded-b-lg">
       {/* Back button - only show if showBack is true and we're not on the first step */}
       {showBack && previousStepId ? (
         <button
           type="button"
           onClick={handleBack}
-          className="px-4 py-2 text-muted-foreground hover:text-foreground border border-muted hover:border-border rounded-md"
+          className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50 transition-colors"
         >
+          <ChevronLeftIcon className="w-4 h-4" />
           Back
         </button>
       ) : (
@@ -105,7 +113,7 @@ export function StepNavigation({
           <button
             type="button"
             onClick={onSkip}
-            className="px-4 py-2 text-muted-foreground hover:text-foreground border border-muted hover:border-border rounded-md"
+            className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
           >
             {skipLabel}
           </button>
@@ -116,9 +124,13 @@ export function StepNavigation({
           type="button"
           onClick={onSave}
           disabled={isLoading || isDisabled}
-          className="px-6 py-2 bg-primary text-black rounded-md hover:bg-primary/80 disabled:opacity-50 disabled:cursor-not-allowed"
+          className={cn(
+            "flex items-center gap-2 px-6 py-2 bg-primary text-black rounded-md shadow-sm hover:bg-primary/90 transition-colors",
+            (isLoading || isDisabled) && "opacity-50 cursor-not-allowed"
+          )}
         >
           {isLoading ? "Saving..." : nextLabel}
+          {!isLoading && <ArrowRightIcon className="w-4 h-4" />}
         </button>
       </div>
     </div>
@@ -140,7 +152,7 @@ export function WizardLayout({ children }: WizardLayoutProps) {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 py-8">
+    <div className="w-full mt-8 max-w-7xl mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Create New Show</h1>
         <p className="text-muted-foreground">
@@ -150,76 +162,91 @@ export function WizardLayout({ children }: WizardLayoutProps) {
 
       <div className="flex flex-col md:flex-row gap-8">
         {/* Steps navigation */}
-        <div className="w-full md:w-64 shrink-0">
-          <nav aria-label="Progress" className="sticky top-4">
-            <ol role="list" className="space-y-4">
-              {WIZARD_STEPS.map((step) => {
-                const isActive = step.id === currentStepId;
-                const isCompleted = completedSteps.includes(step.id);
-                const isClickable = isCompleted || isActive;
+        <div className="w-full md:w-80 shrink-0">
+          <div className="sticky top-4 bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+              <h3 className="text-lg font-semibold">Progress</h3>
+              <p className="text-sm text-gray-500">
+                {completedSteps.length} of {WIZARD_STEPS.length} steps completed
+              </p>
+            </div>
+            <div className="p-2">
+              <nav aria-label="Progress">
+                <ol role="list" className="space-y-2">
+                  {WIZARD_STEPS.map((step, stepIdx) => {
+                    const isActive = step.id === currentStepId;
+                    const isCompleted = completedSteps.includes(step.id);
+                    const isClickable = isCompleted || isActive;
 
-                return (
-                  <li key={step.id}>
-                    <button
-                      onClick={() => handleStepClick(step.id)}
-                      disabled={!isClickable}
-                      className={`group w-full flex items-start gap-3 p-3 rounded-md ${
-                        isActive
-                          ? "bg-primary/10 border border-primary"
-                          : isCompleted
-                            ? "bg-primary-foreground/10 border border-primary/30 hover:border-primary/70"
-                            : "bg-muted/30 border border-muted cursor-not-allowed opacity-70"
-                      }`}
-                    >
-                      <div
-                        className={`rounded-full flex items-center justify-center w-8 h-8 flex-shrink-0 ${
-                          isCompleted
-                            ? "bg-primary text-primary-foreground"
-                            : isActive
-                              ? "border-2 border-primary text-primary"
-                              : "border-2 border-muted-foreground text-muted-foreground"
-                        }`}
-                      >
-                        {isCompleted ? (
-                          <svg
-                            className="w-4 h-4"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        ) : (
-                          <span>{WIZARD_STEPS.indexOf(step) + 1}</span>
+                    return (
+                      <li key={step.id} className="relative group">
+                        {/* Tooltip for disabled steps */}
+                        {!isClickable && (
+                          <div className="absolute opacity-0 group-hover:opacity-100 -right-4 translate-x-full top-1/2 -translate-y-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded pointer-events-none transition-opacity z-10">
+                            Complete previous steps first
+                          </div>
                         )}
-                      </div>
-                      <div className="flex flex-col text-left">
-                        <span
-                          className={`text-sm font-medium ${
-                            isActive || isCompleted
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          }`}
+                        <button
+                          onClick={() => handleStepClick(step.id)}
+                          disabled={!isClickable}
+                          className={cn(
+                            "w-full flex items-start gap-3 p-3 rounded-md transition-colors",
+                            isActive
+                              ? "bg-primary/10 border border-primary shadow-sm"
+                              : isCompleted
+                                ? "bg-green-50 border border-green-200 hover:border-green-300"
+                                : "bg-gray-50 border border-transparent cursor-not-allowed opacity-70"
+                          )}
                         >
-                          {step.label}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {step.description}
-                        </span>
-                      </div>
-                    </button>
-                  </li>
-                );
-              })}
-            </ol>
-          </nav>
+                          <div
+                            className={cn(
+                              "rounded-full flex items-center justify-center w-8 h-8 flex-shrink-0 transition-colors",
+                              isCompleted
+                                ? "bg-green-500 text-white"
+                                : isActive
+                                  ? "border-2 border-primary text-primary bg-white"
+                                  : "border-2 border-gray-300 text-gray-400 bg-white"
+                            )}
+                          >
+                            {isCompleted ? (
+                              <CheckIcon className="w-4 h-4" />
+                            ) : (
+                              <span>{stepIdx + 1}</span>
+                            )}
+                          </div>
+                          <div className="flex flex-col text-left">
+                            <span
+                              className={cn(
+                                "text-sm font-medium",
+                                isActive
+                                  ? "text-primary"
+                                  : isCompleted
+                                    ? "text-gray-900"
+                                    : "text-gray-500"
+                              )}
+                            >
+                              {step.label}
+                            </span>
+                            <span className="text-xs text-gray-500 line-clamp-1">
+                              {step.description}
+                            </span>
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </nav>
+            </div>
+          </div>
         </div>
 
-        {/* Main content */}
-        <div className="flex-1 border rounded-lg p-6">{children}</div>
+        {/* Content area */}
+        <div className="flex-1">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="p-6">{children}</div>
+          </div>
+        </div>
       </div>
     </div>
   );

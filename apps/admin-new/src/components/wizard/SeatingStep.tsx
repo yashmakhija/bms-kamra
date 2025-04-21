@@ -5,6 +5,48 @@ import { useWizardStore } from "../../store/wizardStore";
 import { StepNavigation } from "./WizardLayout";
 import { apiClient } from "@repo/api-client";
 import { Showtime, PriceTier } from "@repo/api-client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@repo/ui/components/ui/card";
+import { Input } from "@repo/ui/components/ui/input";
+import { Button } from "@repo/ui/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@repo/ui/components/ui/select";
+import { Label } from "@repo/ui/components/ui/label";
+import {
+  AlertCircle,
+  Sofa,
+  PlusCircle,
+  InfoIcon,
+  Clock,
+  Trash2,
+  Loader2,
+  Calendar,
+  CircleDollarSign,
+  Users,
+  Tag,
+  ArrowLeft,
+} from "lucide-react";
+import { Alert, AlertDescription } from "@repo/ui/components/ui/alert";
+import { ScrollArea } from "@repo/ui/components/ui/scroll-area";
+import { cn } from "@repo/ui/utils";
+import { Badge } from "@repo/ui/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@repo/ui/components/ui/tooltip";
+import { format } from "date-fns";
 
 interface SeatSectionForm {
   showtimeId: string;
@@ -32,6 +74,8 @@ export function SeatingStep() {
     setError: setGlobalError,
     events,
     showtimes: storeShowtimes,
+    addShowtime,
+    markStepCompleted: markStepComplete,
   } = useWizardStore();
 
   const [form, setForm] = useState<SeatSectionForm>({
@@ -46,7 +90,7 @@ export function SeatingStep() {
   const [availablePriceTiers, setAvailablePriceTiers] = useState<PriceTier[]>(
     []
   );
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [seatSections, setSeatSections] = useState<SeatSectionWithId[]>([]);
@@ -58,15 +102,9 @@ export function SeatingStep() {
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
+
       try {
         console.log(`Loading data for show ID: ${showId}`);
-
-        // Get events from the wizard store
-        const eventsList = Array.isArray(events) ? events : [];
-        console.log(
-          `Using ${eventsList.length} events from wizard store:`,
-          eventsList
-        );
 
         // Get price tiers from the wizard store
         const storePriceTiers = Array.isArray(priceTiers) ? priceTiers : [];
@@ -75,18 +113,13 @@ export function SeatingStep() {
           storePriceTiers
         );
 
-        // Create a properly typed array for API price tiers
-        let apiFormatPriceTiers: PriceTier[] = [];
+        // Create a properly formatted array for price tiers
+        let formattedPriceTiers: PriceTier[] = [];
 
-        // If we have price tiers in the store, convert them to API format
+        // If we have price tiers in the store, use them
         if (storePriceTiers.length > 0) {
-          console.log("Converting price tiers from store to API format");
-
-          // Create PriceTier objects from store data
-          apiFormatPriceTiers = storePriceTiers.map((tier) => {
-            console.log("Converting tier:", tier);
-
-            // Create a properly typed PriceTier object that matches the interface
+          // Convert store tier data to fully typed PriceTier objects
+          formattedPriceTiers = storePriceTiers.map((tier) => {
             return {
               id:
                 tier.id ||
@@ -108,20 +141,20 @@ export function SeatingStep() {
                 createdAt: new Date(),
                 updatedAt: new Date(),
               },
-            } as PriceTier; // Use type assertion to avoid linter errors
+            } as PriceTier;
           });
 
-          console.log("Converted price tiers:", apiFormatPriceTiers);
-          setAvailablePriceTiers(apiFormatPriceTiers);
+          console.log(
+            `Using ${formattedPriceTiers.length} price tiers from store`
+          );
+          setAvailablePriceTiers(formattedPriceTiers);
         } else {
-          // As a fallback, try fetching from API
-          console.log("No price tiers in store, fetching from API...");
+          // Fallback to API only if store is empty
           try {
             const priceTiersData =
               await apiClient.getPriceTiersByShowId(showId);
-            console.log("Price tiers fetched from API:", priceTiersData);
-            apiFormatPriceTiers = priceTiersData || [];
-            setAvailablePriceTiers(apiFormatPriceTiers);
+            formattedPriceTiers = priceTiersData || [];
+            setAvailablePriceTiers(formattedPriceTiers);
           } catch (priceTierError) {
             console.error(
               "Error fetching price tiers from API:",
@@ -131,62 +164,107 @@ export function SeatingStep() {
           }
         }
 
-        console.log(
-          `After conversion/fetching, have ${apiFormatPriceTiers.length} available price tiers`
-        );
+        // ==================== SHOWTIME HANDLING ======================
+        console.log(`Starting to look for showtimes...`);
 
         // First check if we have showtimes in the store
-        const storeShowtimesList = Array.isArray(storeShowtimes)
+        let apiShowtimes: Showtime[] = [];
+        const eventsList = Array.isArray(events) ? events : [];
+
+        // Check store data first
+        const storeShowtimeArray = Array.isArray(storeShowtimes)
           ? storeShowtimes
           : [];
         console.log(
-          `Found ${storeShowtimesList.length} showtimes in store:`,
-          storeShowtimesList
+          `Found ${storeShowtimeArray.length} showtimes in store:`,
+          storeShowtimeArray
         );
 
-        // Initialize our showtime array with properly mapped store showtimes
-        const allShowtimes: Showtime[] = storeShowtimesList.map(
-          (storeShowtime) => ({
-            id: storeShowtime.id,
-            eventId: storeShowtime.eventId,
-            startTime: new Date(storeShowtime.startTime), // Convert ISO string to Date
-            endTime: storeShowtime.endTime
-              ? new Date(storeShowtime.endTime)
-              : new Date(), // Convert ISO string to Date with fallback
-            isActive: true,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          })
-        );
+        // If we have data in the store, try to use it
+        if (storeShowtimeArray.length > 0) {
+          // We need to convert them to the API format for consistency with our component
+          for (const storeShowtime of storeShowtimeArray) {
+            try {
+              // Need to handle both string and Date formats for consistency
+              const startTimeStr =
+                typeof storeShowtime.startTime === "string"
+                  ? storeShowtime.startTime
+                  : "";
 
-        // If we don't have enough showtimes in the store, try to fetch from API as a fallback
-        if (allShowtimes.length === 0) {
-          console.log("No showtimes in store, attempting to fetch from API...");
+              const endTimeStr =
+                typeof storeShowtime.endTime === "string"
+                  ? storeShowtime.endTime
+                  : "";
 
-          // Get all showtimes for all events
-          console.log("Attempting to fetch showtimes for events...");
+              // Create a correctly formatted showtime object
+              const showtime: Showtime = {
+                id: storeShowtime.id,
+                eventId: storeShowtime.eventId,
+                startTime: new Date(startTimeStr),
+                endTime: new Date(endTimeStr),
+                isActive: true,
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              };
 
-          // Try to fetch showtimes for each event
-          for (const event of eventsList) {
-            if (!event.id) {
-              console.warn(`Skipping event with no ID`, event);
-              continue;
+              apiShowtimes.push(showtime);
+            } catch (e) {
+              console.error("Error parsing store showtime:", e);
             }
+          }
+
+          console.log(
+            `Successfully converted ${apiShowtimes.length} store showtimes to API format`
+          );
+        }
+        // If nothing in store or we couldn't parse them, try the API
+        else if (eventsList.length > 0) {
+          console.log(`No valid showtimes found in store. Trying API...`);
+
+          let foundAnyShowtimes = false;
+
+          // For each event, try to get showtimes
+          for (const event of eventsList) {
+            if (!event.id || event.id.startsWith("temp-")) continue;
 
             try {
-              console.log(`Fetching showtimes for event ID: ${event.id}`);
-              const showtimesData = await apiClient.getShowtimesByEventId(
+              console.log(`Fetching showtimes for event ID ${event.id}...`);
+              const eventShowtimes = await apiClient.getShowtimesByEventId(
                 event.id
               );
-              console.log(`API response for showtimes:`, showtimesData);
 
-              if (Array.isArray(showtimesData) && showtimesData.length > 0) {
+              if (eventShowtimes && eventShowtimes.length > 0) {
+                foundAnyShowtimes = true;
                 console.log(
-                  `Found ${showtimesData.length} showtimes for event ${event.id}`
+                  `Found ${eventShowtimes.length} showtimes for event ${event.id}`
                 );
-                allShowtimes.push(...showtimesData);
-              } else {
-                console.warn(`No showtimes found for event ${event.id}`);
+
+                // Add to our API showtimes collection
+                apiShowtimes = [...apiShowtimes, ...eventShowtimes];
+
+                // Also add to the store for next time
+                for (const showtime of eventShowtimes) {
+                  const storeShowtime = {
+                    id: showtime.id,
+                    eventId: showtime.eventId,
+                    startTime:
+                      showtime.startTime instanceof Date
+                        ? showtime.startTime.toISOString()
+                        : typeof showtime.startTime === "string"
+                          ? showtime.startTime
+                          : new Date(showtime.startTime).toISOString(),
+                    endTime:
+                      showtime.endTime instanceof Date
+                        ? showtime.endTime.toISOString()
+                        : typeof showtime.endTime === "string"
+                          ? showtime.endTime
+                          : new Date(showtime.endTime).toISOString(),
+                    isPublic: true,
+                  };
+
+                  // Add to store
+                  addShowtime(storeShowtime);
+                }
               }
             } catch (eventError) {
               console.error(
@@ -195,137 +273,150 @@ export function SeatingStep() {
               );
             }
           }
-        }
 
-        console.log(`Total showtimes found: ${allShowtimes.length}`);
-        setShowtimes(allShowtimes);
-
-        // Set default form values if we have data
-        if (allShowtimes.length > 0 && apiFormatPriceTiers.length > 0) {
-          console.log("Setting default form values");
-          setForm((prev) => ({
-            ...prev,
-            showtimeId: allShowtimes[0].id,
-            priceTierId: apiFormatPriceTiers[0].id,
-            name: `Section for ${apiFormatPriceTiers[0].category?.type || apiFormatPriceTiers[0].description || "Default Category"}`,
-          }));
-        } else {
-          console.log("Missing data needed for form defaults:", {
-            showtimes: allShowtimes.length,
-            priceTiers: apiFormatPriceTiers.length,
-          });
-        }
-
-        // Fetch existing seat sections for all showtimes
-        console.log("Fetching seat sections for all showtimes...");
-        const existingSeatSections: SeatSectionWithId[] = [];
-        for (const showtime of allShowtimes) {
-          try {
-            console.log(
-              `Fetching seat sections for showtime ID: ${showtime.id}`
-            );
-            const seatSectionsData =
-              await apiClient.getSeatSectionsByShowtimeId(showtime.id);
-            if (seatSectionsData && Array.isArray(seatSectionsData)) {
-              console.log(
-                `Found ${seatSectionsData.length} seat sections for showtime ${showtime.id}`
-              );
-              existingSeatSections.push(
-                ...seatSectionsData.map((section) => ({
-                  id: section.id,
-                  showtimeId: section.showtimeId,
-                  priceTierId: section.priceTierId,
-                  name: section.name,
-                  totalSeats: section.availableSeats,
-                  availableSeats: section.availableSeats,
-                }))
-              );
-            }
-          } catch (sectionError) {
-            console.error(
-              `Error fetching seat sections for showtime ${showtime.id}:`,
-              sectionError
-            );
+          if (foundAnyShowtimes) {
+            console.log(`Found showtimes via API. Marking step as completed.`);
+            markStepComplete("showtimes");
           }
         }
 
+        console.log(`Total showtimes found: ${apiShowtimes.length}`);
+        setShowtimes(apiShowtimes);
+
+        // ==================== END SHOWTIME HANDLING ===================
+
+        // Set initial form values if we have showtimes and price tiers
+        if (apiShowtimes.length > 0 && formattedPriceTiers.length > 0) {
+          // Pre-fill the form with the first showtime and price tier
+          setForm((prevForm) => ({
+            ...prevForm,
+            showtimeId: apiShowtimes[0].id,
+            priceTierId: formattedPriceTiers[0].id,
+            name: `${formattedPriceTiers[0].category?.type || "Standard"} Section`,
+          }));
+        }
+
+        // Check for seat sections in the store
+        const storeSeatSectionsList = Array.isArray(storeSeatSections)
+          ? storeSeatSections
+          : [];
         console.log(
-          `Total existing seat sections found: ${existingSeatSections.length}`
+          `Found ${storeSeatSectionsList.length} seat sections in store:`,
+          storeSeatSectionsList
         );
-        setSeatSections(existingSeatSections);
 
-        // Data summary for debugging
-        console.log("Data loading summary:");
-        console.log(`- Events from store: ${eventsList.length}`);
-        console.log(`- Price Tiers from store: ${storePriceTiers.length}`);
-        console.log(`- Price Tiers available: ${apiFormatPriceTiers.length}`);
-        console.log(`- Showtimes from store: ${storeShowtimesList.length}`);
-        console.log(`- Showtimes total: ${allShowtimes.length}`);
-        console.log(`- Seat Sections: ${existingSeatSections.length}`);
+        if (storeSeatSectionsList.length > 0) {
+          // Convert store seat sections to our local format
+          const convertedSections = storeSeatSectionsList
+            .filter((section) => section && section.id)
+            .map((section) => {
+              // Find a showtime to associate with this section if not already specified
+              const showtime = apiShowtimes.length > 0 ? apiShowtimes[0] : null;
 
-        // Show friendly error messages based on missing data
-        if (eventsList.length === 0) {
-          setError(
-            "No events found. Please create events first in the events step."
-          );
-        } else if (allShowtimes.length === 0) {
-          setError(
-            "No showtimes found. Please create showtimes first in the showtimes step."
-          );
+              return {
+                id: section.id,
+                showtimeId: showtime?.id || "",
+                priceTierId: section.priceTierId || "",
+                name: section.name,
+                totalSeats: section.capacity || 100,
+                availableSeats: section.capacity || 100,
+                isNew: false,
+              };
+            });
 
-          // Add some debugging info to help user troubleshoot
-          console.warn("Possible reasons for missing showtimes:");
-          console.warn("1. Showtimes were not successfully created");
-          console.warn(
-            "2. Event IDs in the store don't match those on the server"
-          );
-          console.warn(
-            "3. The showtimes API endpoint is returning empty results"
-          );
-          console.warn(
-            "4. Showtimes were not properly saved to the wizard store"
-          );
-        } else if (apiFormatPriceTiers.length === 0) {
-          setError(
-            "No price tiers found. Please create price tiers first in the pricing step."
-          );
+          setSeatSections(convertedSections);
+        } else {
+          // No seat sections in store, start with empty array
+          setSeatSections([]);
         }
       } catch (error) {
         console.error("Error loading data:", error);
-        setError(
-          `Failed to load data: ${error instanceof Error ? error.message : "Unknown error"}`
-        );
+        setError("Failed to load necessary data. Please try again later.");
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchData();
-  }, [showId, events, priceTiers, storeShowtimes]);
+  }, [
+    showId,
+    priceTiers,
+    storeShowtimes,
+    storeSeatSections,
+    events,
+    addShowtime,
+    markStepComplete,
+  ]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    let parsedValue: string | number = value;
 
+    // Clear any error message when form changes
+    setError(null);
+
+    // Parse numeric values
     if (name === "totalSeats" || name === "availableSeats") {
-      const numValue = parseInt(value) || 0;
-      setForm({
-        ...form,
-        [name]: numValue <= 0 ? 1 : numValue,
-        // When totalSeats changes, update availableSeats to match
-        ...(name === "totalSeats"
-          ? { availableSeats: numValue <= 0 ? 1 : numValue }
-          : {}),
-      });
-    } else {
-      setForm({
-        ...form,
-        [name]: value,
-      });
+      parsedValue = parseInt(value) || 0;
+
+      // Ensure available seats doesn't exceed total seats
+      if (
+        name === "totalSeats" &&
+        parsedValue < form.availableSeats &&
+        parsedValue > 0
+      ) {
+        setForm({
+          ...form,
+          [name]: parsedValue,
+          availableSeats: parsedValue,
+        });
+        return;
+      }
     }
 
+    setForm({
+      ...form,
+      [name]: parsedValue,
+    });
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    // Clear any error message when form changes
     setError(null);
+
+    // Update form with the selected value
+    setForm({
+      ...form,
+      [name]: value,
+    });
+
+    // If changing showtime, suggest a section name based on price tier
+    if (name === "showtimeId" && form.priceTierId) {
+      const priceTier = availablePriceTiers.find(
+        (pt) => pt.id === form.priceTierId
+      );
+      if (priceTier) {
+        setForm((prev) => ({
+          ...prev,
+          [name]: value,
+          name: `${priceTier.category?.type || "Standard"} Section`,
+        }));
+      }
+    }
+
+    // If changing price tier, suggest a section name based on it
+    if (name === "priceTierId") {
+      const priceTier = availablePriceTiers.find((pt) => pt.id === value);
+      if (priceTier) {
+        setForm((prev) => ({
+          ...prev,
+          [name]: value,
+          name: `${priceTier.category?.type || "Standard"} Section`,
+        }));
+      }
+    }
   };
 
   const validateForm = (): boolean => {
@@ -349,8 +440,22 @@ export function SeatingStep() {
       return false;
     }
 
-    if (form.availableSeats > form.totalSeats) {
-      setError("Available seats cannot exceed total seats");
+    if (form.availableSeats < 0 || form.availableSeats > form.totalSeats) {
+      setError("Available seats must be between 0 and total seats");
+      return false;
+    }
+
+    // Check if a section with the same name already exists for this showtime
+    const duplicateSection = seatSections.find(
+      (section) =>
+        section.showtimeId === form.showtimeId &&
+        section.name.toLowerCase() === form.name.toLowerCase()
+    );
+
+    if (duplicateSection) {
+      setError(
+        `A section named "${form.name}" already exists for this showtime`
+      );
       return false;
     }
 
@@ -360,23 +465,34 @@ export function SeatingStep() {
   const handleAddSeatSection = () => {
     if (!validateForm()) return;
 
-    // Create a seat section for the wizard store
+    // Create a new seat section with a temporary ID
     const newSeatSection: SeatSectionWithId = {
-      id: `temp-${new Date().getTime()}`,
       ...form,
+      id: `temp-${new Date().getTime()}`,
       isNew: true,
     };
 
     // Add to local state
     setSeatSections([...seatSections, newSeatSection]);
 
-    // Reset the form but keep the showtime and price tier
+    // Reset the form but keep showtime and price tier selections
     setForm({
       ...form,
-      name: "",
+      name: "", // Clear only the name
       totalSeats: 100,
       availableSeats: 100,
     });
+
+    // Suggest a new name based on price tier
+    const priceTier = availablePriceTiers.find(
+      (pt) => pt.id === form.priceTierId
+    );
+    if (priceTier) {
+      setForm((prev) => ({
+        ...prev,
+        name: `${priceTier.category?.type || "Standard"} Section ${seatSections.length + 1}`,
+      }));
+    }
   };
 
   const handleRemoveSeatSection = (sectionId: string) => {
@@ -385,7 +501,7 @@ export function SeatingStep() {
 
   const handleSave = async () => {
     if (seatSections.length === 0) {
-      setError("Please add at least one seat section");
+      setError("Please add at least one seating section");
       return;
     }
 
@@ -398,58 +514,61 @@ export function SeatingStep() {
       setIsSubmitting(true);
       setGlobalLoading(true);
 
-      // Create a new array to store saved seat sections
-      const savedSectionIds: string[] = [];
+      // Save each seat section that is marked as new
+      const savedSections = [];
 
-      // Process each seat section
       for (const section of seatSections) {
-        if (section.id && section.id.startsWith("temp-")) {
-          // This is a new section, create it via API
+        if (section.isNew && section.id?.startsWith("temp-")) {
+          // Create the seat section via API
           try {
-            console.log("Creating seat section with data:", {
+            console.log(`Creating seat section: ${section.name}`);
+            const createData = {
+              name: section.name,
               showtimeId: section.showtimeId,
               priceTierId: section.priceTierId,
-              name: section.name,
+              totalSeats: section.totalSeats,
               availableSeats: section.totalSeats,
+            };
+
+            const createdSection =
+              await apiClient.createSeatSectionViaShow(createData);
+
+            console.log("Successfully created seat section:", createdSection);
+
+            // Add the created section to our saved list
+            savedSections.push({
+              id: createdSection.id,
+              ...section,
+              isNew: false,
             });
 
-            const seatSection = await apiClient.createSeatSection({
-              showtimeId: section.showtimeId,
-              priceTierId: section.priceTierId,
-              name: section.name,
-              availableSeats: section.totalSeats,
-            });
-
-            console.log("Successfully created seat section:", seatSection);
-
-            savedSectionIds.push(seatSection.id);
-
-            // Add to the wizard store
+            // Add to the wizard store with the format it expects
             addSeatingSection({
-              id: seatSection.id,
+              id: createdSection.id,
               showId: showId,
-              name: seatSection.name,
-              capacity: seatSection.availableSeats,
-              priceTierId: seatSection.priceTierId,
+              name: createdSection.name,
+              capacity: createdSection.availableSeats,
+              priceTierId: createdSection.priceTierId,
             });
-          } catch (err) {
-            console.error("Failed to create seat section:", err);
-            setError(`Failed to create seat section: ${section.name}`);
+          } catch (error) {
+            console.error(
+              `Error creating seat section ${section.name}:`,
+              error
+            );
+            setError(`Failed to create section: ${section.name}`);
           }
-        } else if (section.id) {
-          // This is an existing section, include it
-          savedSectionIds.push(section.id);
+        } else {
+          // This section already exists, just add it to our list
+          savedSections.push(section);
         }
       }
 
-      // Mark step as completed only if we have at least one saved section
-      if (savedSectionIds.length > 0) {
+      // Mark step as completed and proceed only if we have successfully saved sections
+      if (savedSections.length > 0) {
         markStepCompleted("seating");
-
-        // Move to the next step
         setCurrentStep("review");
       } else {
-        setError("Failed to save any seat sections. Please try again.");
+        setError("Failed to save any sections. Please try again.");
       }
     } catch (error) {
       console.error("Error saving seat sections:", error);
@@ -466,364 +585,434 @@ export function SeatingStep() {
     handleSave();
   };
 
-  // Helper to get showtime start time for display
   const getShowtimeDisplay = (showtimeId: string) => {
     const showtime = showtimes.find((st) => st.id === showtimeId);
-    if (!showtime) return "Unknown showtime";
+    if (!showtime) return "Unknown Showtime";
 
-    const startTime = new Date(showtime.startTime);
-    return `${startTime.toLocaleDateString()} at ${startTime.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+    try {
+      // Find the event for this showtime
+      const eventsList = Array.isArray(events) ? events : [];
+      const event = eventsList.find((e) => e.id === showtime.eventId);
+
+      // Format the date and time
+      let formattedDate = "Unknown Date";
+      let formattedTime = "Unknown Time";
+
+      try {
+        const startTime = new Date(showtime.startTime);
+        if (!isNaN(startTime.getTime())) {
+          // Try to get date from event first
+          const eventDate =
+            event && event.date ? new Date(event.date) : startTime;
+
+          if (!isNaN(eventDate.getTime())) {
+            formattedDate = format(eventDate, "MMM d, yyyy");
+          }
+
+          formattedTime = format(startTime, "h:mm a");
+        }
+      } catch (formatError) {
+        console.error("Error formatting date/time:", formatError);
+        // Use raw values as fallback
+        formattedDate = event?.date?.toString() || "Unknown Date";
+        formattedTime = showtime.startTime?.toString() || "Unknown Time";
+      }
+
+      return `${formattedDate} at ${formattedTime}`;
+    } catch (error) {
+      console.error("Error in getShowtimeDisplay:", error);
+      return `Showtime ID: ${showtimeId}`;
+    }
   };
 
-  // Helper to get price tier name for display
   const getPriceTierDisplay = (priceTierId: string) => {
     const priceTier = availablePriceTiers.find((pt) => pt.id === priceTierId);
-    if (!priceTier) return "Unknown price tier";
+    if (!priceTier) return "Unknown Price Tier";
 
-    const categoryType = priceTier.category?.type || "Standard";
-    return `${categoryType} - ${priceTier.price} ${priceTier.currency}`;
+    const categoryName =
+      priceTier.category?.name || priceTier.description || "Standard";
+    return `${categoryName} - ${priceTier.price} ${priceTier.currency}`;
   };
 
+  const getPriceTierColor = (priceTierId: string) => {
+    const priceTier = availablePriceTiers.find((pt) => pt.id === priceTierId);
+    if (!priceTier) return "bg-gray-100 text-gray-800";
+
+    // Return color based on tier type/description
+    const type =
+      priceTier.category?.type?.toUpperCase() ||
+      priceTier.description?.toUpperCase() ||
+      "";
+
+    if (type.includes("VIP")) return "bg-primary/10 text-primary";
+    if (type.includes("PREMIUM")) return "bg-secondary/20 text-secondary";
+    if (type.includes("REGULAR")) return "bg-muted text-muted-foreground";
+
+    return "bg-muted text-muted-foreground";
+  };
+
+  // Check if we have actual data to show
+  const hasShowtimes = showtimes && showtimes.length > 0;
+  const hasPriceTiers = availablePriceTiers && availablePriceTiers.length > 0;
+  const hasEvents = Array.isArray(events) && events.length > 0;
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Seating Sections</h2>
-        <p className="text-muted-foreground">
-          Create seat sections for each showtime
-        </p>
-      </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-4 flex flex-col gap-2">
-          <p>{error}</p>
-          <div className="flex gap-2 mt-1">
-            {availablePriceTiers.length === 0 && (
-              <button
-                type="button"
-                onClick={() => setCurrentStep("pricing")}
-                className="text-sm py-1 px-3 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-              >
-                Go to Pricing Step
-              </button>
-            )}
-            {showtimes.length === 0 && (
-              <button
-                type="button"
-                onClick={() => setCurrentStep("showtimes")}
-                className="text-sm py-1 px-3 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-              >
-                Go to Showtimes Step
-              </button>
-            )}
-            {events.length === 0 && (
-              <button
-                type="button"
-                onClick={() => setCurrentStep("events")}
-                className="text-sm py-1 px-3 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-              >
-                Go to Events Step
-              </button>
-            )}
+    <Card className="border-none shadow-none">
+      <CardHeader className="px-0">
+        <CardTitle className="text-2xl font-bold">Seating Sections</CardTitle>
+        <CardDescription>
+          Create seating sections for each showtime and price tier
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-0">
+        {!showId ? (
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Please complete the previous steps first.
+            </AlertDescription>
+          </Alert>
+        ) : isLoading ? (
+          <div className="flex items-center justify-center h-[200px]">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mr-2" />
+            <p className="text-muted-foreground">Loading section data...</p>
           </div>
-        </div>
-      )}
+        ) : !hasShowtimes ? (
+          <div className="space-y-6">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {hasEvents
+                  ? "No showtimes available. Please go back and add showtimes first."
+                  : "No events or showtimes found. You need to create events and showtimes before adding seating sections."}
+              </AlertDescription>
+            </Alert>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Seat Section Form */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Add Seat Section</h3>
-
-            {!showId ? (
-              <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-md">
-                Please complete the previous steps first.
-              </div>
-            ) : isLoading ? (
-              <div className="bg-muted/30 p-6 rounded-md flex flex-col items-center justify-center text-center">
-                <p className="text-muted-foreground">
-                  Loading showtimes and price tiers...
-                </p>
-              </div>
-            ) : events.length === 0 ||
-              showtimes.length === 0 ||
-              availablePriceTiers.length === 0 ? (
-              <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-md">
-                <h4 className="font-medium">Missing Required Data</h4>
-                <ul className="mt-2 space-y-1 list-disc pl-5 text-sm">
-                  {events.length === 0 && (
-                    <li>
-                      No events found. Please{" "}
-                      <button
-                        type="button"
-                        onClick={() => setCurrentStep("events")}
-                        className="underline text-blue-600 hover:text-blue-800"
-                      >
-                        create events
-                      </button>{" "}
-                      first.
-                    </li>
-                  )}
-                  {showtimes.length === 0 && (
-                    <li>
-                      No showtimes found. Please{" "}
-                      <button
-                        type="button"
-                        onClick={() => setCurrentStep("showtimes")}
-                        className="underline text-blue-600 hover:text-blue-800"
-                      >
-                        create showtimes
-                      </button>{" "}
-                      first.
-                    </li>
-                  )}
-                  {availablePriceTiers.length === 0 && (
-                    <li>
-                      No price tiers found. Please{" "}
-                      <button
-                        type="button"
-                        onClick={() => setCurrentStep("pricing")}
-                        className="underline text-blue-600 hover:text-blue-800"
-                      >
-                        create price tiers
-                      </button>{" "}
-                      first.
-                    </li>
-                  )}
-                </ul>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Showtime Selection */}
-                <div className="space-y-2">
-                  <label htmlFor="showtimeId" className="text-sm font-medium">
-                    Showtime <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    id="showtimeId"
-                    name="showtimeId"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    value={form.showtimeId}
-                    onChange={handleInputChange}
-                    disabled={showtimes.length === 0}
-                  >
-                    <option value="">Select a showtime</option>
-                    {showtimes.map((showtime) => (
-                      <option key={showtime.id} value={showtime.id}>
-                        {new Date(showtime.startTime).toLocaleDateString()} at{" "}
-                        {new Date(showtime.startTime).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </option>
-                    ))}
-                  </select>
-                  {showtimes.length === 0 && (
-                    <div className="mt-2">
-                      <p className="text-xs text-red-500">
-                        No showtimes available. Please create showtimes first.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setCurrentStep("showtimes")}
-                        className="mt-1 text-xs py-1 px-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 w-fit"
-                      >
-                        Go to Showtimes Step
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Price Tier Selection */}
-                <div className="space-y-2">
-                  <label htmlFor="priceTierId" className="text-sm font-medium">
-                    Price Tier <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    id="priceTierId"
-                    name="priceTierId"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    value={form.priceTierId}
-                    onChange={handleInputChange}
-                    disabled={availablePriceTiers.length === 0}
-                  >
-                    <option value="">Select a price tier</option>
-                    {availablePriceTiers.map((tier) => (
-                      <option key={tier.id} value={tier.id}>
-                        {tier.category?.type || "Standard"} - {tier.price}{" "}
-                        {tier.currency}
-                      </option>
-                    ))}
-                  </select>
-                  {availablePriceTiers.length === 0 && (
-                    <div className="mt-2">
-                      <p className="text-xs text-red-500">
-                        No price tiers available. Please create price tiers
-                        first.
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setCurrentStep("pricing")}
-                        className="mt-1 text-xs py-1 px-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 w-fit"
-                      >
-                        Go to Pricing Step
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Section Name */}
-                <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-medium">
-                    Section Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    value={form.name}
-                    onChange={handleInputChange}
-                    placeholder="E.g., Front Section, Back Section, etc."
-                    disabled={
-                      showtimes.length === 0 || availablePriceTiers.length === 0
-                    }
-                  />
-                </div>
-
-                {/* Total Seats */}
-                <div className="space-y-2">
-                  <label htmlFor="totalSeats" className="text-sm font-medium">
-                    Total Seats <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="totalSeats"
-                    name="totalSeats"
-                    type="number"
-                    min="1"
-                    step="1"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    value={form.totalSeats}
-                    onChange={handleInputChange}
-                    disabled={
-                      showtimes.length === 0 || availablePriceTiers.length === 0
-                    }
-                  />
-                </div>
-
-                {error && (
-                  <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md text-sm">
-                    {error}
-                  </div>
-                )}
-
-                <div>
-                  <button
-                    type="button"
-                    onClick={handleAddSeatSection}
-                    className="px-4 py-2 bg-primary text-black rounded-md hover:bg-primary/80"
-                    disabled={
-                      !form.showtimeId ||
-                      !form.priceTierId ||
-                      showtimes.length === 0 ||
-                      availablePriceTiers.length === 0
-                    }
-                  >
-                    Add Seat Section
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Instructions */}
-            <div className="mt-6 bg-muted/30 p-4 rounded-md">
-              <h4 className="text-sm font-medium mb-2">Tips:</h4>
-              <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">
-                <li>
-                  Create seat sections for each showtime using your price tiers
-                </li>
-                <li>
-                  Each seat section defines the actual seating area for a
-                  specific showtime
-                </li>
-                <li>The total seats represents the capacity of the section</li>
-                <li>You need at least one seat section to proceed</li>
-              </ul>
+            <div className="flex flex-col items-center justify-center bg-muted/20 rounded-lg p-8 space-y-4">
+              <Clock className="h-12 w-12 text-muted-foreground" />
+              <h3 className="text-lg font-medium">Missing Showtimes</h3>
+              <p className="text-center text-muted-foreground">
+                {hasEvents
+                  ? "Your show has events, but no showtimes have been created yet. Showtimes are specific times when the show will be performed on each event date."
+                  : "Both events and showtimes are required to create seating sections. Please complete those steps first."}
+              </p>
+              <Button
+                onClick={() =>
+                  hasEvents
+                    ? setCurrentStep("showtimes")
+                    : setCurrentStep("events")
+                }
+                className="mt-2"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Go to {hasEvents ? "Showtimes" : "Events"} Step
+              </Button>
             </div>
           </div>
+        ) : !hasPriceTiers ? (
+          <div className="space-y-6">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                No price tiers found. You need to create price tiers before
+                adding seating sections.
+              </AlertDescription>
+            </Alert>
 
-          {/* Added Seat Sections List */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Added Seat Sections</h3>
-
-            {seatSections.length === 0 ? (
-              <div className="bg-muted/30 p-6 rounded-md flex flex-col items-center justify-center text-center">
-                <p className="text-muted-foreground">
-                  No seat sections added yet
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Add seat sections using the form on the left
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {seatSections.map((section) => (
-                  <div
-                    key={section.id}
-                    className="flex justify-between items-center p-3 rounded-md border bg-card"
-                  >
-                    <div>
-                      <p className="font-medium">
-                        {section.name}
-                        {section.id && section.id.startsWith("temp-") && (
-                          <span className="ml-2 text-xs text-amber-500">
-                            (Not saved)
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {getShowtimeDisplay(section.showtimeId)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {getPriceTierDisplay(section.priceTierId)} -{" "}
-                        {section.totalSeats} seats
-                      </p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        section.id && handleRemoveSeatSection(section.id)
-                      }
-                      className="p-1 text-muted-foreground hover:text-red-500"
-                      title="Remove seat section"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="flex flex-col items-center justify-center bg-muted/20 rounded-lg p-8 space-y-4">
+              <CircleDollarSign className="h-12 w-12 text-muted-foreground" />
+              <h3 className="text-lg font-medium">Missing Price Tiers</h3>
+              <p className="text-center text-muted-foreground">
+                Price tiers are required to create seating sections. Please go
+                back to the Pricing step to add at least one price tier.
+              </p>
+              <Button
+                onClick={() => setCurrentStep("pricing")}
+                className="mt-2"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Go to Pricing Step
+              </Button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Seat Section Form */}
+              <div className="space-y-5">
+                <div className="flex items-center">
+                  <Sofa className="mr-2 h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-semibold">Add Seating Section</h3>
+                </div>
 
-        {/* Step Navigation */}
-        <StepNavigation
-          onSave={handleSave}
-          isLoading={isSubmitting}
-          isDisabled={seatSections.length === 0 || !showId}
-          showBack={true}
-        />
-      </form>
-    </div>
+                <div className="space-y-4 p-4 rounded-md border border-muted bg-muted/10">
+                  {/* Showtime Selection */}
+                  <div className="space-y-2">
+                    <Label htmlFor="showtimeId" className="font-medium">
+                      Showtime <span className="text-destructive">*</span>
+                    </Label>
+                    <Select
+                      value={form.showtimeId}
+                      onValueChange={(value) =>
+                        handleSelectChange("showtimeId", value)
+                      }
+                    >
+                      <SelectTrigger id="showtimeId">
+                        <SelectValue placeholder="Select a showtime" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {showtimes.map((showtime) => (
+                          <SelectItem key={showtime.id} value={showtime.id}>
+                            {getShowtimeDisplay(showtime.id)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Price Tier Selection */}
+                  <div className="space-y-2">
+                    <Label htmlFor="priceTierId" className="font-medium">
+                      Price Tier <span className="text-destructive">*</span>
+                    </Label>
+                    <Select
+                      value={form.priceTierId}
+                      onValueChange={(value) =>
+                        handleSelectChange("priceTierId", value)
+                      }
+                    >
+                      <SelectTrigger id="priceTierId">
+                        <SelectValue placeholder="Select a price tier" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availablePriceTiers.map((tier) => (
+                          <SelectItem key={tier.id} value={tier.id}>
+                            <div className="flex items-center">
+                              <Tag className="mr-2 h-4 w-4 text-muted-foreground" />
+                              {tier.category?.type ||
+                                tier.description ||
+                                "Standard"}{" "}
+                              - {tier.price} {tier.currency}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Section Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="name" className="font-medium">
+                      Section Name <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      value={form.name}
+                      onChange={handleInputChange}
+                      placeholder="e.g., Front Row, Orchestra, Balcony"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Total Seats */}
+                    <div className="space-y-2">
+                      <Label htmlFor="totalSeats" className="font-medium">
+                        Total Seats <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Users className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="totalSeats"
+                          name="totalSeats"
+                          type="number"
+                          min="1"
+                          value={form.totalSeats}
+                          onChange={handleInputChange}
+                          className="pl-8"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Available Seats */}
+                    <div className="space-y-2">
+                      <Label htmlFor="availableSeats" className="font-medium">
+                        Available Seats{" "}
+                        <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Users className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="availableSeats"
+                          name="availableSeats"
+                          type="number"
+                          min="0"
+                          max={form.totalSeats}
+                          value={form.availableSeats}
+                          onChange={handleInputChange}
+                          className="pl-8"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {error && (
+                    <Alert variant="destructive" className="py-2">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <Button
+                    type="button"
+                    onClick={handleAddSeatSection}
+                    className="w-full"
+                  >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Section
+                  </Button>
+                </div>
+
+                {/* Instructions */}
+                <div className="bg-muted/40 rounded-md p-4 flex items-start">
+                  <InfoIcon className="h-5 w-5 text-muted-foreground mr-3 mt-0.5" />
+                  <div className="text-sm text-muted-foreground">
+                    <p className="font-medium mb-1">Tips:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>
+                        Create multiple seating sections for each showtime
+                      </li>
+                      <li>Each section should be assigned a price tier</li>
+                      <li>Specify the total number of seats in each section</li>
+                      <li>
+                        Set the initially available seats (usually the same as
+                        total seats)
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {/* Added Seat Sections */}
+              <div>
+                <div className="flex items-center mb-4">
+                  <Sofa className="mr-2 h-5 w-5 text-primary" />
+                  <h3 className="text-lg font-semibold">
+                    Added Seating Sections
+                  </h3>
+                </div>
+
+                {seatSections.length === 0 ? (
+                  <div className="bg-muted/30 p-6 rounded-md flex flex-col items-center justify-center text-center h-[250px]">
+                    <Sofa className="h-12 w-12 text-muted-foreground opacity-20 mb-3" />
+                    <p className="text-muted-foreground font-medium">
+                      No seating sections added yet
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Add sections using the form on the left
+                    </p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[380px] pr-4">
+                    <div className="space-y-3">
+                      {seatSections.map((section) => (
+                        <Card
+                          key={section.id}
+                          className={cn(
+                            "border overflow-hidden transition-all hover:shadow-md",
+                            section.isNew
+                              ? "border-primary/30 bg-primary/5"
+                              : ""
+                          )}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h4 className="font-medium text-base">
+                                    {section.name}
+                                  </h4>
+                                  {section.isNew && (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-amber-600 border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800"
+                                    >
+                                      Not saved
+                                    </Badge>
+                                  )}
+                                </div>
+
+                                <div className="space-y-2 mt-2 text-sm">
+                                  <div className="flex items-center text-muted-foreground">
+                                    <Calendar className="h-3.5 w-3.5 mr-2" />
+                                    <span>
+                                      {getShowtimeDisplay(section.showtimeId)}
+                                    </span>
+                                  </div>
+
+                                  <div className="flex items-center text-muted-foreground">
+                                    <CircleDollarSign className="h-3.5 w-3.5 mr-2" />
+                                    <Badge
+                                      variant="outline"
+                                      className={getPriceTierColor(
+                                        section.priceTierId
+                                      )}
+                                    >
+                                      {getPriceTierDisplay(section.priceTierId)}
+                                    </Badge>
+                                  </div>
+
+                                  <div className="flex items-center text-muted-foreground">
+                                    <Users className="h-3.5 w-3.5 mr-2" />
+                                    <span>
+                                      {section.availableSeats} available /{" "}
+                                      {section.totalSeats} total seats
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-destructive/60 hover:text-destructive hover:bg-destructive/10"
+                                      onClick={() =>
+                                        section.id &&
+                                        handleRemoveSeatSection(section.id)
+                                      }
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Remove section</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </div>
+            </div>
+
+            {/* Step Navigation */}
+            <StepNavigation
+              onSave={handleSave}
+              isLoading={isSubmitting}
+              isDisabled={seatSections.length === 0}
+              showBack={true}
+            />
+          </form>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

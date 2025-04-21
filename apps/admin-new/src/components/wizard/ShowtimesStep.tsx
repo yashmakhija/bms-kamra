@@ -6,6 +6,43 @@ import { format } from "date-fns";
 import { StepNavigation } from "./WizardLayout";
 import { apiClient } from "@repo/api-client";
 import { Showtime } from "@repo/api-client";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@repo/ui/components/ui/card";
+import { Input } from "@repo/ui/components/ui/input";
+import { Button } from "@repo/ui/components/ui/button";
+
+import { Label } from "@repo/ui/components/ui/label";
+import {
+  AlertCircle,
+  Clock,
+  PlusCircle,
+  InfoIcon,
+  AlarmClock,
+  Trash2,
+  Loader2,
+  Calendar,
+} from "lucide-react";
+import { Alert, AlertDescription } from "@repo/ui/components/ui/alert";
+import { ScrollArea } from "@repo/ui/components/ui/scroll-area";
+import { cn } from "@repo/ui/utils";
+import { Badge } from "@repo/ui/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@repo/ui/components/ui/tooltip";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@repo/ui/components/ui/tabs";
 
 interface ShowtimeForm {
   eventId: string;
@@ -27,6 +64,7 @@ export function ShowtimesStep() {
     setLoading: setGlobalLoading,
     setError: setGlobalError,
     addShowtime,
+    setShowtimes: setStoreShowtimes,
   } = useWizardStore();
 
   // Create a safe events list
@@ -70,6 +108,7 @@ export function ShowtimesStep() {
       try {
         const eventShowtimes: Record<string, Showtime[]> = {};
         const localShowtimes: ShowtimeWithId[] = [];
+        const storeShowtimes: Showtime[] = [];
 
         // Fetch showtimes only for events with real IDs (not temporary IDs)
         for (const event of eventsList) {
@@ -87,16 +126,34 @@ export function ShowtimesStep() {
 
             // Convert API showtimes to local format
             response.forEach((showtime) => {
-              const startTime = new Date(showtime.startTime);
-              const endTime = new Date(showtime.endTime);
+              const apiStartTime =
+                typeof showtime.startTime === "string"
+                  ? new Date(showtime.startTime)
+                  : showtime.startTime;
+
+              const apiEndTime =
+                typeof showtime.endTime === "string"
+                  ? new Date(showtime.endTime)
+                  : showtime.endTime;
 
               localShowtimes.push({
                 id: showtime.id,
                 eventId: showtime.eventId,
-                startTime: `${String(startTime.getHours()).padStart(2, "0")}:${String(startTime.getMinutes()).padStart(2, "0")}`,
-                endTime: `${String(endTime.getHours()).padStart(2, "0")}:${String(endTime.getMinutes()).padStart(2, "0")}`,
+                startTime: `${String(apiStartTime.getHours()).padStart(2, "0")}:${String(apiStartTime.getMinutes()).padStart(2, "0")}`,
+                endTime: `${String(apiEndTime.getHours()).padStart(2, "0")}:${String(apiEndTime.getMinutes()).padStart(2, "0")}`,
                 isNew: false,
               });
+
+              // For the wizard store, we need a different format - with ISO strings for dates
+              const wizardFormatShowtime = {
+                id: showtime.id,
+                eventId: showtime.eventId,
+                startTime: apiStartTime.toISOString(),
+                endTime: apiEndTime.toISOString(),
+                isPublic: true,
+              };
+
+              storeShowtimes.push(wizardFormatShowtime as any);
             });
           } catch (error) {
             console.error(
@@ -109,6 +166,31 @@ export function ShowtimesStep() {
 
         setSavedShowtimes(eventShowtimes);
         setShowtimes(localShowtimes);
+
+        // Save all existing showtimes to store - ensure types match wizard store
+        if (storeShowtimes.length > 0) {
+          // Convert API showtimes to wizard showtimes format
+          const wizardShowtimes = storeShowtimes.map((showtime) => ({
+            id: showtime.id,
+            eventId: showtime.eventId,
+            startTime:
+              showtime.startTime instanceof Date
+                ? showtime.startTime.toISOString()
+                : new Date(showtime.startTime).toISOString(),
+            endTime:
+              showtime.endTime instanceof Date
+                ? showtime.endTime.toISOString()
+                : new Date(showtime.endTime).toISOString(),
+            isPublic: true,
+          }));
+
+          console.log(
+            `Setting ${wizardShowtimes.length} showtimes in store:`,
+            wizardShowtimes
+          );
+          setStoreShowtimes(wizardShowtimes);
+          markStepCompleted("showtimes");
+        }
       } catch (error) {
         console.error("Error loading showtimes:", error);
         setError("Failed to load existing showtimes");
@@ -118,7 +200,7 @@ export function ShowtimesStep() {
     };
 
     loadShowtimes();
-  }, [events, showId]);
+  }, [events, showId, setStoreShowtimes, markStepCompleted]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -128,6 +210,15 @@ export function ShowtimesStep() {
       ...form,
       [name]: value,
     });
+    setError(null);
+  };
+
+  const handleSelectChange = (name: string, value: string) => {
+    setForm({
+      ...form,
+      [name]: value,
+    });
+    setCurrentEventId(name === "eventId" ? value : currentEventId);
     setError(null);
   };
 
@@ -205,21 +296,22 @@ export function ShowtimesStep() {
   };
 
   const handleAddShowtime = () => {
-    if (validateForm()) {
-      const newShowtime: ShowtimeWithId = {
-        ...form,
-        isNew: true,
-      };
+    if (!validateForm()) return;
 
-      setShowtimes([...showtimes, newShowtime]);
+    const newShowtime: ShowtimeWithId = {
+      ...form,
+      id: `temp-${new Date().getTime()}`,
+      isNew: true,
+    };
 
-      // Reset the form to default values but keep the same event
-      setForm({
-        ...form,
-        startTime: "19:00",
-        endTime: "21:00",
-      });
-    }
+    setShowtimes([...showtimes, newShowtime]);
+
+    // Reset only the times for easier adding of multiple showtimes
+    setForm({
+      ...form,
+      startTime: "19:00",
+      endTime: "21:00",
+    });
   };
 
   const handleRemoveShowtime = (index: number) => {
@@ -228,8 +320,7 @@ export function ShowtimesStep() {
     setShowtimes(newShowtimes);
   };
 
-  const handleEventChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const eventId = e.target.value;
+  const handleEventChange = (eventId: string) => {
     setCurrentEventId(eventId);
     setForm({
       ...form,
@@ -238,8 +329,18 @@ export function ShowtimesStep() {
   };
 
   const handleSave = async () => {
+    if (eventsList.length === 0) {
+      setError("There are no events to add showtimes to");
+      return;
+    }
+
     if (showtimes.length === 0) {
-      setError("You need to add at least one showtime");
+      setError("Please add at least one showtime");
+      return;
+    }
+
+    if (!showId) {
+      setError("Show ID is required. Please complete the previous steps.");
       return;
     }
 
@@ -247,86 +348,72 @@ export function ShowtimesStep() {
       setIsSubmitting(true);
       setGlobalLoading(true);
 
-      // Array to track created showtimes
-      const createdShowtimeIds: string[] = [];
+      // Create a new array to store saved showtimes
+      const savedShowtimesList = [];
 
-      // Save all new showtimes to the API
+      // Process each showtime
       for (const showtime of showtimes) {
-        // Only create new showtimes that don't have an ID yet
-        if (showtime.isNew) {
-          const eventId = showtime.eventId;
-          const event = eventsList.find((e) => e.id === eventId);
+        if (showtime.id && showtime.id.startsWith("temp-")) {
+          // This is a new showtime that needs to be created via API
+          const eventDate = eventsList.find(
+            (event) => event.id === showtime.eventId
+          )?.date;
 
-          if (!event) {
-            console.error("Event not found for showtime:", showtime);
+          if (!eventDate) {
+            console.error(
+              `Could not find event date for event ID: ${showtime.eventId}`
+            );
             continue;
           }
 
-          // Create a date object from the event date and showtime
-          const eventDate = new Date(event.date);
-          const startTimeParts = showtime.startTime.split(":");
-          const endTimeParts = showtime.endTime.split(":");
+          // Convert the times to ISO format by combining event date + showtime
+          const eventDateObj = new Date(eventDate);
+          const dateString = format(eventDateObj, "yyyy-MM-dd");
 
-          const startTime = new Date(eventDate);
-          startTime.setHours(
-            parseInt(startTimeParts[0]),
-            parseInt(startTimeParts[1])
-          );
+          const startTimeObj = new Date(`${dateString}T${showtime.startTime}`);
+          const endTimeObj = new Date(`${dateString}T${showtime.endTime}`);
 
-          const endTime = new Date(eventDate);
-          endTime.setHours(
-            parseInt(endTimeParts[0]),
-            parseInt(endTimeParts[1])
-          );
-
-          // Convert to ISO string for API
-          const showtimeData = {
-            eventId: eventId,
-            startTime: startTime.toISOString(),
-            endTime: endTime.toISOString(),
-          };
-
-          console.log("Creating showtime:", showtimeData);
-          const createdShowtime = await apiClient.createShowtime(showtimeData);
-          console.log("Successfully created showtime:", createdShowtime);
-
-          // Add the newly created showtime to the wizard store
-          if (createdShowtime && createdShowtime.id) {
-            console.log(
-              `Adding showtime ID ${createdShowtime.id} to the wizard store`
-            );
-
-            // Add to wizard store
-            addShowtime({
-              id: createdShowtime.id,
-              eventId: createdShowtime.eventId,
-              startTime:
-                typeof createdShowtime.startTime === "string"
-                  ? createdShowtime.startTime
-                  : createdShowtime.startTime.toISOString(),
-              endTime:
-                typeof createdShowtime.endTime === "string"
-                  ? createdShowtime.endTime
-                  : createdShowtime.endTime.toISOString(),
-              isPublic: true,
+          try {
+            // Create the showtime via API
+            const createdShowtime = await apiClient.createShowtime({
+              eventId: showtime.eventId,
+              startTime: startTimeObj.toISOString(),
+              endTime: endTimeObj.toISOString(),
             });
 
-            // Track created IDs
-            createdShowtimeIds.push(createdShowtime.id);
+            // Store the created showtime
+            savedShowtimesList.push(createdShowtime);
+
+            // Add to the wizard store for other steps to use with proper format
+            const wizardShowtime = {
+              id: createdShowtime.id,
+              eventId: createdShowtime.eventId,
+              startTime: startTimeObj.toISOString(),
+              endTime: endTimeObj.toISOString(),
+              isPublic: true,
+            };
+
+            console.log("Adding showtime to store:", wizardShowtime);
+            addShowtime(wizardShowtime);
+          } catch (error) {
+            console.error("Failed to create showtime:", error);
+            setError(`Failed to create showtime for ${dateString}`);
           }
         } else if (showtime.id) {
-          // This is an existing showtime, just track its ID
-          createdShowtimeIds.push(showtime.id);
+          // This showtime already exists, no need to re-create it
+          savedShowtimesList.push(showtime);
         }
       }
 
-      console.log("All showtimes saved/tracked:", createdShowtimeIds);
+      // Mark step as completed only if we have at least one saved showtime
+      if (savedShowtimesList.length > 0) {
+        markStepCompleted("showtimes");
 
-      // Mark step as completed
-      markStepCompleted("showtimes");
-
-      // Move to the next step
-      setCurrentStep("seating");
+        // Move to the next step
+        setCurrentStep("seating");
+      } else {
+        setError("Failed to save any showtimes. Please try again.");
+      }
     } catch (error) {
       console.error("Error saving showtimes:", error);
       setError("Failed to save showtimes. Please try again.");
@@ -342,260 +429,393 @@ export function ShowtimesStep() {
     handleSave();
   };
 
-  // Get showtimes for the current event
-  const filteredShowtimes = currentEventId
-    ? showtimes.filter((showtime) => showtime.eventId === currentEventId)
+  // Group showtimes by event for display
+  const showtimesByEvent = showtimes.reduce(
+    (acc, showtime) => {
+      const eventId = showtime.eventId;
+      if (!acc[eventId]) {
+        acc[eventId] = [];
+      }
+      acc[eventId].push(showtime);
+      return acc;
+    },
+    {} as Record<string, ShowtimeWithId[]>
+  );
+
+  // Convert events to a map for easier lookup
+  const eventsMap = eventsList.reduce(
+    (acc, event) => {
+      acc[event.id] = event;
+      return acc;
+    },
+    {} as Record<string, (typeof eventsList)[0]>
+  );
+
+  // Get current event
+  const currentEvent = currentEventId ? eventsMap[currentEventId] : null;
+
+  // Get showtimes for current event
+  const currentEventShowtimes = currentEventId
+    ? showtimesByEvent[currentEventId] || []
     : [];
 
-  // Get the event date for display
-  const currentEvent = eventsList.find((event) => event.id === currentEventId);
-
-  const eventDate = currentEvent
-    ? format(new Date(currentEvent.date), "EEEE, MMMM d, yyyy")
-    : "";
-
-  const hasEvents = eventsList.length > 0;
-
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">Showtimes</h2>
-        <p className="text-muted-foreground">
-          Set specific times for each event date
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Showtime Form */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Add Showtime</h3>
-
-            {!hasEvents ? (
-              <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-md">
-                No events have been added yet. Please go back to the Events step
-                and add at least one event date.
+    <Card className="border-none shadow-none">
+      <CardHeader className="px-0">
+        <CardTitle className="text-2xl font-bold">Showtimes</CardTitle>
+        <CardDescription>
+          Add specific times when the show will be performed for each event date
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-0">
+        {eventsList.length === 0 ? (
+          <Alert variant="default" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Please add events before adding showtimes. Go back to the Events
+              step first.
+            </AlertDescription>
+          </Alert>
+        ) : !showId ? (
+          <Alert variant="default" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Please complete the previous steps first before adding showtimes.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <Tabs
+              defaultValue={currentEventId || ""}
+              value={currentEventId || ""}
+              onValueChange={handleEventChange}
+              className="w-full"
+            >
+              <div className="flex items-center mb-4">
+                <Calendar className="mr-2 h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">Select Event Date</h3>
               </div>
-            ) : (
-              <div className="space-y-4">
-                {/* Event Selection */}
-                <div className="space-y-2">
-                  <label htmlFor="eventId" className="text-sm font-medium">
-                    Event Date
-                  </label>
-                  <select
-                    id="eventId"
-                    name="eventId"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    value={form.eventId}
-                    onChange={handleEventChange}
+
+              <TabsList className="w-full flex flex-wrap h-auto justify-start mb-6 bg-muted/50">
+                {eventsList.map((event) => (
+                  <TabsTrigger
+                    key={event.id}
+                    value={event.id}
+                    className="flex-grow-0 mb-1 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                   >
-                    {eventsList.map((event) => (
-                      <option key={event.id} value={event.id}>
-                        {format(new Date(event.date), "EEEE, MMMM d, yyyy")}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Start Time */}
-                  <div className="space-y-2">
-                    <label htmlFor="startTime" className="text-sm font-medium">
-                      Start Time
-                    </label>
-                    <input
-                      id="startTime"
-                      name="startTime"
-                      type="time"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      value={form.startTime}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-
-                  {/* End Time */}
-                  <div className="space-y-2">
-                    <label htmlFor="endTime" className="text-sm font-medium">
-                      End Time
-                    </label>
-                    <input
-                      id="endTime"
-                      name="endTime"
-                      type="time"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      value={form.endTime}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-
-                {error && <p className="text-sm text-red-500">{error}</p>}
-
-                <div>
-                  <button
-                    type="button"
-                    onClick={handleAddShowtime}
-                    className="px-4 py-2 bg-primary text-black rounded-md hover:bg-primary/80"
-                  >
-                    Add Showtime
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Instructions */}
-            <div className="mt-6 bg-muted/30 p-4 rounded-md">
-              <h4 className="text-sm font-medium mb-2">Tips:</h4>
-              <ul className="text-sm text-muted-foreground space-y-1 list-disc pl-4">
-                <li>Add all showtimes for each event date</li>
-                <li>
-                  Start and end times should include the full duration of the
-                  show
-                </li>
-                <li>Make sure showtimes don't overlap</li>
-                <li>
-                  You can add multiple showtimes per day (matinee, evening,
-                  etc.)
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Added Showtimes List */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">
-              {eventDate ? `Showtimes for ${eventDate}` : "Showtimes"}
-            </h3>
-
-            {isLoading ? (
-              <div className="bg-muted/30 p-6 rounded-md flex flex-col items-center justify-center text-center">
-                <p className="text-muted-foreground">Loading showtimes...</p>
-              </div>
-            ) : filteredShowtimes.length === 0 ? (
-              <div className="bg-muted/30 p-6 rounded-md flex flex-col items-center justify-center text-center">
-                <p className="text-muted-foreground">
-                  No showtimes added yet for this event
-                </p>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Add showtimes using the form on the left
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {filteredShowtimes
-                  .sort((a, b) => {
-                    const aTime = a.startTime.split(":");
-                    const bTime = b.startTime.split(":");
-                    return (
-                      parseInt(aTime[0]) * 60 +
-                      parseInt(aTime[1]) -
-                      (parseInt(bTime[0]) * 60 + parseInt(bTime[1]))
-                    );
-                  })
-                  .map((showtime, index) => {
-                    const startParts = showtime.startTime.split(":");
-                    const endParts = showtime.endTime.split(":");
-
-                    const startHour = parseInt(startParts[0]);
-                    const startMinute = startParts[1];
-                    const startAmPm = startHour >= 12 ? "PM" : "AM";
-                    const displayStartHour =
-                      startHour > 12
-                        ? startHour - 12
-                        : startHour === 0
-                          ? 12
-                          : startHour;
-
-                    const endHour = parseInt(endParts[0]);
-                    const endMinute = endParts[1];
-                    const endAmPm = endHour >= 12 ? "PM" : "AM";
-                    const displayEndHour =
-                      endHour > 12
-                        ? endHour - 12
-                        : endHour === 0
-                          ? 12
-                          : endHour;
-
-                    return (
-                      <div
-                        key={index}
-                        className="flex justify-between items-center p-3 rounded-md border bg-card"
+                    {format(new Date(event.date), "MMM d, yyyy")}
+                    {event.id.startsWith("temp-") && (
+                      <Badge
+                        variant="outline"
+                        className="ml-2 text-amber-500 border-amber-200"
                       >
-                        <div>
-                          <p className="font-medium">
-                            {`${displayStartHour}:${startMinute} ${startAmPm} - ${displayEndHour}:${endMinute} ${endAmPm}`}
-                            {showtime.isNew && (
-                              <span className="ml-2 text-xs text-amber-500">
-                                (Not saved)
-                              </span>
-                            )}
+                        New
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              {eventsList.map((event) => (
+                <TabsContent
+                  key={event.id}
+                  value={event.id}
+                  className="space-y-6"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Showtime Form */}
+                    <div className="space-y-5">
+                      <div className="flex items-center">
+                        <AlarmClock className="mr-2 h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-semibold">Add Showtime</h3>
+                      </div>
+
+                      <div className="p-4 rounded-md border border-muted bg-muted/10">
+                        <div className="text-sm font-medium mb-3">
+                          Event:{" "}
+                          {format(new Date(event.date), "EEEE, MMMM d, yyyy")}
+                        </div>
+
+                        <input type="hidden" name="eventId" value={event.id} />
+
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* Start Time */}
+                          <div className="space-y-2">
+                            <Label htmlFor="startTime" className="font-medium">
+                              Start Time{" "}
+                              <span className="text-destructive">*</span>
+                            </Label>
+                            <div className="relative">
+                              <Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input
+                                id="startTime"
+                                name="startTime"
+                                type="time"
+                                value={form.startTime}
+                                onChange={handleInputChange}
+                                className="pl-8"
+                              />
+                            </div>
+                          </div>
+
+                          {/* End Time */}
+                          <div className="space-y-2">
+                            <Label htmlFor="endTime" className="font-medium">
+                              End Time{" "}
+                              <span className="text-destructive">*</span>
+                            </Label>
+                            <div className="relative">
+                              <Clock className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <Input
+                                id="endTime"
+                                name="endTime"
+                                type="time"
+                                value={form.endTime}
+                                onChange={handleInputChange}
+                                className="pl-8"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {error && (
+                          <Alert variant="destructive" className="mt-4 py-2">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>{error}</AlertDescription>
+                          </Alert>
+                        )}
+
+                        <Button
+                          type="button"
+                          onClick={handleAddShowtime}
+                          className="w-full mt-4"
+                        >
+                          <PlusCircle className="mr-2 h-4 w-4" />
+                          Add Showtime
+                        </Button>
+                      </div>
+
+                      {/* Instructions */}
+                      <div className="bg-muted/40 rounded-md p-4 flex items-start">
+                        <InfoIcon className="h-5 w-5 text-muted-foreground mr-3 mt-0.5" />
+                        <div className="text-sm text-muted-foreground">
+                          <p className="font-medium mb-1">Tips:</p>
+                          <ul className="list-disc pl-5 space-y-1">
+                            <li>Add multiple showtimes for each event date</li>
+                            <li>Times must not overlap for the same event</li>
+                            <li>End time must be after start time</li>
+                            <li>You need at least one showtime to proceed</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Added Showtimes List */}
+                    <div>
+                      <div className="flex items-center mb-4">
+                        <Clock className="mr-2 h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-semibold">
+                          Showtimes for {format(new Date(event.date), "MMM d")}
+                        </h3>
+                      </div>
+
+                      {isLoading ? (
+                        <div className="flex items-center justify-center h-[250px] bg-muted/30 rounded-md">
+                          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                          <span className="ml-2 text-muted-foreground">
+                            Loading showtimes...
+                          </span>
+                        </div>
+                      ) : currentEventShowtimes.length === 0 ? (
+                        <div className="bg-muted/30 p-6 rounded-md flex flex-col items-center justify-center text-center h-[250px]">
+                          <Clock className="h-12 w-12 text-muted-foreground opacity-20 mb-3" />
+                          <p className="text-muted-foreground font-medium">
+                            No showtimes added yet
                           </p>
-                          <p className="text-xs text-muted-foreground">
-                            {parseInt(endParts[0]) * 60 +
-                              parseInt(endParts[1]) -
-                              (parseInt(startParts[0]) * 60 +
-                                parseInt(startParts[1]))}{" "}
-                            minutes
+                          <p className="text-sm text-muted-foreground mt-1">
+                            Add showtimes using the form on the left
                           </p>
                         </div>
-                        <button
-                          onClick={() => handleRemoveShowtime(index)}
-                          className="p-1 text-muted-foreground hover:text-red-500"
-                          title="Remove showtime"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        </button>
-                      </div>
+                      ) : (
+                        <ScrollArea className="h-[300px] pr-4">
+                          <div className="space-y-3">
+                            {currentEventShowtimes
+                              .sort((a, b) => {
+                                // Sort by start time
+                                const aMinutes =
+                                  parseInt(a.startTime.split(":")[0]) * 60 +
+                                  parseInt(a.startTime.split(":")[1]);
+                                const bMinutes =
+                                  parseInt(b.startTime.split(":")[0]) * 60 +
+                                  parseInt(b.startTime.split(":")[1]);
+                                return aMinutes - bMinutes;
+                              })
+                              .map((showtime, index) => (
+                                <Card
+                                  key={showtime.id || index}
+                                  className={cn(
+                                    "border overflow-hidden",
+                                    showtime.id &&
+                                      showtime.id.startsWith("temp-")
+                                      ? "border-primary/30 bg-primary/5"
+                                      : ""
+                                  )}
+                                >
+                                  <CardContent className="p-4 flex justify-between items-center">
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <Badge
+                                          variant="outline"
+                                          className="bg-primary/10 text-primary"
+                                        >
+                                          {showtime.startTime} -{" "}
+                                          {showtime.endTime}
+                                        </Badge>
+                                        {showtime.id &&
+                                          showtime.id.startsWith("temp-") && (
+                                            <Badge
+                                              variant="outline"
+                                              className="text-amber-600 border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800"
+                                            >
+                                              Not saved
+                                            </Badge>
+                                          )}
+                                      </div>
+                                      <p className="text-sm mt-1 text-muted-foreground">
+                                        Duration:{" "}
+                                        {(() => {
+                                          const startMinutes =
+                                            parseInt(
+                                              showtime.startTime.split(":")[0]
+                                            ) *
+                                              60 +
+                                            parseInt(
+                                              showtime.startTime.split(":")[1]
+                                            );
+                                          const endMinutes =
+                                            parseInt(
+                                              showtime.endTime.split(":")[0]
+                                            ) *
+                                              60 +
+                                            parseInt(
+                                              showtime.endTime.split(":")[1]
+                                            );
+                                          const durationMinutes =
+                                            endMinutes - startMinutes;
+                                          const hours = Math.floor(
+                                            durationMinutes / 60
+                                          );
+                                          const minutes = durationMinutes % 60;
+                                          return `${hours > 0 ? `${hours}h ` : ""}${minutes > 0 ? `${minutes}m` : ""}`;
+                                        })()}
+                                      </p>
+                                    </div>
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-destructive/60 hover:text-destructive hover:bg-destructive/10"
+                                            onClick={() =>
+                                              handleRemoveShowtime(
+                                                showtimes.findIndex(
+                                                  (s) => s.id === showtime.id
+                                                )
+                                              )
+                                            }
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Remove showtime</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                          </div>
+                        </ScrollArea>
+                      )}
+                    </div>
+                  </div>
+                </TabsContent>
+              ))}
+            </Tabs>
+
+            {/* Summary of all showtimes */}
+            <div className="mt-6 pt-6 border-t border-muted">
+              <div className="flex items-center mb-4">
+                <Calendar className="mr-2 h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">All Showtimes Summary</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {Object.entries(showtimesByEvent).map(
+                  ([eventId, eventShowtimes]) => {
+                    const event = eventsMap[eventId];
+                    if (!event) return null;
+
+                    return (
+                      <Card key={eventId} className="border overflow-hidden">
+                        <CardHeader className="p-3 bg-muted/20">
+                          <CardTitle className="text-base">
+                            {format(new Date(event.date), "EEEE, MMM d")}
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-3">
+                          {eventShowtimes.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                              No showtimes
+                            </p>
+                          ) : (
+                            <div className="flex flex-wrap gap-2">
+                              {eventShowtimes
+                                .sort((a, b) => {
+                                  const aTime =
+                                    parseInt(a.startTime.split(":")[0]) * 60 +
+                                    parseInt(a.startTime.split(":")[1]);
+                                  const bTime =
+                                    parseInt(b.startTime.split(":")[0]) * 60 +
+                                    parseInt(b.startTime.split(":")[1]);
+                                  return aTime - bTime;
+                                })
+                                .map((showtime, index) => (
+                                  <Badge
+                                    key={showtime.id || index}
+                                    variant="outline"
+                                    className={cn(
+                                      "bg-primary/10 text-primary",
+                                      showtime.id?.startsWith("temp-") &&
+                                        "border-primary"
+                                    )}
+                                  >
+                                    {showtime.startTime}
+                                  </Badge>
+                                ))}
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
                     );
-                  })}
+                  }
+                )}
               </div>
-            )}
+            </div>
 
-            {/* Event Tabs */}
-            {hasEvents && eventsList.length > 1 && (
-              <div className="mt-6">
-                <h4 className="text-sm font-medium mb-2">All Event Dates:</h4>
-                <div className="flex flex-wrap gap-2">
-                  {eventsList.map((event) => (
-                    <button
-                      key={event.id}
-                      onClick={() => setCurrentEventId(event.id)}
-                      className={`px-3 py-1 text-sm rounded-full ${
-                        currentEventId === event.id
-                          ? "bg-primary text-black"
-                          : "bg-muted hover:bg-muted-foreground/20"
-                      }`}
-                    >
-                      {format(new Date(event.date), "MMM d")}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Step Navigation */}
-        <StepNavigation
-          onSave={handleSave}
-          isLoading={isSubmitting}
-          isDisabled={showtimes.length === 0}
-          showBack={true}
-        />
-      </form>
-    </div>
+            {/* Step Navigation */}
+            <StepNavigation
+              onSave={handleSave}
+              isLoading={isSubmitting}
+              isDisabled={showtimes.length === 0 || !showId}
+              showBack={true}
+            />
+          </form>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

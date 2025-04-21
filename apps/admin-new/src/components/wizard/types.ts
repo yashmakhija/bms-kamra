@@ -125,12 +125,14 @@ export interface ShowDetails {
   name: string;
   description: string;
   venue: string;
-  coverImage?: string;
+  image?: string;
   bannerImage?: string;
   category?: string;
   tags?: string[];
   duration?: number; // in minutes
   isPublic: boolean;
+  ageLimit?: number;
+  language?: string;
 }
 
 // Event details
