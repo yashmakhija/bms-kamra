@@ -304,4 +304,5 @@ enum PaymentMethod {
   PAYPAL
   BANK_TRANSFER
   WALLET
+  RAZORPAY
 }

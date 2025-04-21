@@ -5,55 +5,42 @@ import {
   Navigate,
 } from "react-router-dom";
 
-import { Navbar } from "./components/layout/navbar/navbar";
-import { Footer } from "./components/layout/footer";
+import { Layout } from "./components/layout/layout";
+import { ProtectedRoute } from "./components/auth/protected-route";
+import { ThemeProvider } from "./providers/theme-provider";
+import { AuthProvider } from "./providers/auth-provider";
 
 import { DashboardPage } from "./pages/dashboard";
 import { ShowsPage } from "./pages/shows";
-import { AuthProvider } from "./providers/auth-provider";
-import { ThemeProvider } from "./providers/theme-provider";
-import { ProtectedRoute } from "./components/auth/protected-route";
 import { ShowWizardPage } from "./pages/show-wizard";
+import { VenuesPage } from "./pages/venues";
 
 function App() {
   return (
     <ThemeProvider defaultTheme="dark">
       <AuthProvider>
         <Router>
-          <Navbar />
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-            {/* Protected Admin Routes */}
+            {/* Protected Admin Routes - with Layout */}
             <Route
-              path="/dashboard"
+              path="/"
               element={
                 <ProtectedRoute>
-                  <DashboardPage />
+                  <Layout />
                 </ProtectedRoute>
               }
-            />
-            <Route
-              path="/shows"
-              element={
-                <ProtectedRoute>
-                  <ShowsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/shows/new"
-              element={
-                <ProtectedRoute>
-                  <ShowWizardPage />
-                </ProtectedRoute>
-              }
-            />
+            >
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/shows" element={<ShowsPage />} />
+              <Route path="/shows/new" element={<ShowWizardPage />} />
+              <Route path="/venues" element={<VenuesPage />} />
+            </Route>
 
             {/* Catch-all route */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-          <Footer />
         </Router>
       </AuthProvider>
     </ThemeProvider>

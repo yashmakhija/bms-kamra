@@ -3,6 +3,7 @@ import { API_CONFIG, ENDPOINTS, STORAGE_KEYS } from "./config";
 import {
   AuthResponse,
   Booking,
+  BookingStatus,
   ChangePasswordRequest,
   CreateBookingRequest,
   DeleteAccountRequest,
@@ -31,6 +32,14 @@ import {
   SeatSection,
   SeatSectionCreateInput,
   Venue,
+  VenueCreateInput,
+  UpdateEventInput,
+  UpdateShowtimeInput,
+  UpdateSeatSectionInput,
+  UpdateVenueInput,
+  UpdatePriceTierInput,
+  UpdateCategoryInput,
+  PriceTierCreateWithTypeInput,
 } from "./types";
 
 /**
@@ -299,6 +308,18 @@ class ApiClient {
 
   // ----- Event Methods -----
 
+  async getEventsByShowId(showId: string): Promise<Event[]> {
+    const response = await this.client.get<Event[]>(
+      ENDPOINTS.events.getByShow(showId)
+    );
+    return response.data;
+  }
+
+  async getEventById(id: string): Promise<Event> {
+    const response = await this.client.get<Event>(ENDPOINTS.events.getById(id));
+    return response.data;
+  }
+
   async createEvent(data: EventCreateInput): Promise<Event> {
     const response = await this.client.post<Event>(
       ENDPOINTS.shows.createEvent,
@@ -307,12 +328,59 @@ class ApiClient {
     return response.data;
   }
 
+  async updateEvent(id: string, data: UpdateEventInput): Promise<Event> {
+    const response = await this.client.put<Event>(
+      ENDPOINTS.events.update(id),
+      data
+    );
+    return response.data;
+  }
+
+  async deleteEvent(id: string): Promise<{ message: string }> {
+    const response = await this.client.delete<{ message: string }>(
+      ENDPOINTS.events.delete(id)
+    );
+    return response.data;
+  }
+
   // ----- Showtime Methods -----
+
+  async getShowtimesByEventId(eventId: string): Promise<Showtime[]> {
+    const response = await this.client.get<Showtime[]>(
+      ENDPOINTS.showtimes.getByEvent(eventId)
+    );
+    return response.data;
+  }
+
+  async getShowtimeById(id: string): Promise<Showtime> {
+    const response = await this.client.get<Showtime>(
+      ENDPOINTS.showtimes.getById(id)
+    );
+    return response.data;
+  }
 
   async createShowtime(data: ShowtimeCreateInput): Promise<Showtime> {
     const response = await this.client.post<Showtime>(
       ENDPOINTS.shows.createShowtime,
       data
+    );
+    return response.data;
+  }
+
+  async updateShowtime(
+    id: string,
+    data: UpdateShowtimeInput
+  ): Promise<Showtime> {
+    const response = await this.client.put<Showtime>(
+      ENDPOINTS.showtimes.update(id),
+      data
+    );
+    return response.data;
+  }
+
+  async deleteShowtime(id: string): Promise<{ message: string }> {
+    const response = await this.client.delete<{ message: string }>(
+      ENDPOINTS.showtimes.delete(id)
     );
     return response.data;
   }
@@ -355,6 +423,24 @@ class ApiClient {
     const response = await this.client.post<Category>(
       ENDPOINTS.categories.create,
       data
+    );
+    return response.data;
+  }
+
+  async updateCategory(
+    id: string,
+    data: UpdateCategoryInput
+  ): Promise<Category> {
+    const response = await this.client.put<Category>(
+      ENDPOINTS.categories.update(id),
+      data
+    );
+    return response.data;
+  }
+
+  async deleteCategory(id: string): Promise<{ message: string }> {
+    const response = await this.client.delete<{ message: string }>(
+      ENDPOINTS.categories.delete(id)
     );
     return response.data;
   }
@@ -405,7 +491,42 @@ class ApiClient {
     return response.data;
   }
 
+  async createPriceTierWithType(
+    data: PriceTierCreateWithTypeInput
+  ): Promise<PriceTier> {
+    const response = await this.client.post<PriceTier>(
+      ENDPOINTS.priceTiers.create,
+      data
+    );
+    return response.data;
+  }
+
+  async updatePriceTier(
+    id: string,
+    data: UpdatePriceTierInput
+  ): Promise<PriceTier> {
+    const response = await this.client.put<PriceTier>(
+      ENDPOINTS.priceTiers.update(id),
+      data
+    );
+    return response.data;
+  }
+
+  async deletePriceTier(id: string): Promise<{ message: string }> {
+    const response = await this.client.delete<{ message: string }>(
+      ENDPOINTS.priceTiers.delete(id)
+    );
+    return response.data;
+  }
+
   // ----- Seat Section Methods -----
+
+  async getSeatSectionById(id: string): Promise<SeatSection> {
+    const response = await this.client.get<SeatSection>(
+      ENDPOINTS.seatSections.getById(id)
+    );
+    return response.data;
+  }
 
   async getSeatSectionsByShowtimeId(
     showtimeId: string
@@ -416,10 +537,32 @@ class ApiClient {
     return response.data;
   }
 
+  /**
+   * Create a seat section using the dedicated /seat-sections endpoint
+   * Note: For creating sections when setting up a show, use createSeatSectionViaShow instead
+   */
   async createSeatSection(data: SeatSectionCreateInput): Promise<SeatSection> {
     const response = await this.client.post<SeatSection>(
       ENDPOINTS.seatSections.create,
       data
+    );
+    return response.data;
+  }
+
+  async updateSeatSection(
+    id: string,
+    data: UpdateSeatSectionInput
+  ): Promise<SeatSection> {
+    const response = await this.client.put<SeatSection>(
+      ENDPOINTS.seatSections.update(id),
+      data
+    );
+    return response.data;
+  }
+
+  async deleteSeatSection(id: string): Promise<{ message: string }> {
+    const response = await this.client.delete<{ message: string }>(
+      ENDPOINTS.seatSections.delete(id)
     );
     return response.data;
   }
@@ -433,6 +576,174 @@ class ApiClient {
 
   async getVenueById(id: string): Promise<Venue> {
     const response = await this.client.get<Venue>(ENDPOINTS.venues.getById(id));
+    return response.data;
+  }
+
+  async createVenue(data: VenueCreateInput): Promise<Venue> {
+    const response = await this.client.post<Venue>(
+      ENDPOINTS.venues.create,
+      data
+    );
+    return response.data;
+  }
+
+  async updateVenue(id: string, data: UpdateVenueInput): Promise<Venue> {
+    const response = await this.client.put<Venue>(
+      ENDPOINTS.venues.update(id),
+      data
+    );
+    return response.data;
+  }
+
+  async deleteVenue(id: string): Promise<{ message: string }> {
+    const response = await this.client.delete<{ message: string }>(
+      ENDPOINTS.venues.delete(id)
+    );
+    return response.data;
+  }
+
+  // ----- Admin Methods -----
+
+  async getAllBookings(
+    page = 1,
+    limit = 20,
+    status?: string,
+    userId?: string,
+    showId?: string
+  ): Promise<{
+    bookings: Booking[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    let url = `${ENDPOINTS.admin.getAllBookings}?page=${page}&limit=${limit}`;
+    if (status) url += `&status=${status}`;
+    if (userId) url += `&userId=${userId}`;
+    if (showId) url += `&showId=${showId}`;
+
+    const response = await this.client.get<{
+      bookings: Booking[];
+      total: number;
+      page: number;
+      limit: number;
+    }>(url);
+    return response.data;
+  }
+
+  async getAllUsers(
+    page = 1,
+    limit = 20
+  ): Promise<{
+    users: User[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const response = await this.client.get<{
+      users: User[];
+      total: number;
+      page: number;
+      limit: number;
+    }>(`${ENDPOINTS.admin.getAllUsers}?page=${page}&limit=${limit}`);
+    return response.data;
+  }
+
+  // ----- Admin Analytics Methods -----
+
+  async getDashboardStats(): Promise<{
+    totalBookings: number;
+    totalRevenue: number;
+    totalUsers: number;
+    recentBookings: Booking[];
+    upcomingShows: Show[];
+  }> {
+    const response = await this.client.get<{
+      totalBookings: number;
+      totalRevenue: number;
+      totalUsers: number;
+      recentBookings: Booking[];
+      upcomingShows: Show[];
+    }>(ENDPOINTS.admin.getDashboardStats);
+    return response.data;
+  }
+
+  async getBookingAnalytics(
+    startDate?: string,
+    endDate?: string
+  ): Promise<{
+    dailyBookings: { date: string; count: number }[];
+    bookingsByStatus: { status: BookingStatus; count: number }[];
+    bookingsByShow: { showId: string; showTitle: string; count: number }[];
+  }> {
+    let url = ENDPOINTS.admin.getBookingAnalytics;
+    if (startDate || endDate) {
+      url += "?";
+      if (startDate) url += `startDate=${startDate}`;
+      if (startDate && endDate) url += "&";
+      if (endDate) url += `endDate=${endDate}`;
+    }
+
+    const response = await this.client.get<{
+      dailyBookings: { date: string; count: number }[];
+      bookingsByStatus: { status: BookingStatus; count: number }[];
+      bookingsByShow: { showId: string; showTitle: string; count: number }[];
+    }>(url);
+    return response.data;
+  }
+
+  async getRevenueStats(
+    startDate?: string,
+    endDate?: string
+  ): Promise<{
+    totalRevenue: number;
+    dailyRevenue: { date: string; amount: number }[];
+    revenueByShow: { showId: string; showTitle: string; amount: number }[];
+    revenueByCategory: { categoryType: string; amount: number }[];
+  }> {
+    let url = ENDPOINTS.admin.getRevenueStats;
+    if (startDate || endDate) {
+      url += "?";
+      if (startDate) url += `startDate=${startDate}`;
+      if (startDate && endDate) url += "&";
+      if (endDate) url += `endDate=${endDate}`;
+    }
+
+    const response = await this.client.get<{
+      totalRevenue: number;
+      dailyRevenue: { date: string; amount: number }[];
+      revenueByShow: { showId: string; showTitle: string; amount: number }[];
+      revenueByCategory: { categoryType: string; amount: number }[];
+    }>(url);
+    return response.data;
+  }
+
+  async getUserStats(): Promise<{
+    userGrowth: { date: string; count: number }[];
+    usersByStatus: { isActive: boolean; count: number }[];
+    topBookingUsers: { userId: string; userName: string; bookings: number }[];
+  }> {
+    const response = await this.client.get<{
+      userGrowth: { date: string; count: number }[];
+      usersByStatus: { isActive: boolean; count: number }[];
+      topBookingUsers: { userId: string; userName: string; bookings: number }[];
+    }>(ENDPOINTS.admin.getUserStats);
+    return response.data;
+  }
+
+  // Add new method for creating sections using the shows endpoint
+  async createSeatSectionViaShow(
+    data: SeatSectionCreateInput
+  ): Promise<SeatSection> {
+    const response = await this.client.post<SeatSection>(
+      ENDPOINTS.shows.createSection,
+      data
+    );
+    return response.data;
+  }
+
+  // Add this new method for publishing a show
+  async publishShow(id: string): Promise<Show> {
+    const response = await this.client.post<Show>(ENDPOINTS.shows.publish(id));
     return response.data;
   }
 }

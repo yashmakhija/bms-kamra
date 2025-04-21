@@ -4,7 +4,8 @@
   "private": true,
   "exports": {
     "./utils": "./src/utils.ts",
-    "./*": "./src/*.tsx"
+    "./*": "./src/*.tsx",
+    "./hooks/*": "./src/hooks/*.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",
@@ -35,12 +36,15 @@
     "@radix-ui/react-slot": "^1.2.0",
     "@radix-ui/react-switch": "^1.2.2",
     "@radix-ui/react-tabs": "^1.1.4",
+    "@radix-ui/react-toast": "^1.2.10",
     "@radix-ui/react-tooltip": "^1.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.0",
     "cmdk": "^1.1.1",
+    "date-fns": "^4.1.0",
     "lucide-react": "^0.487.0",
     "react": "^19.1.0",
+    "react-day-picker": "8.10.1",
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.55.0",
     "tailwind-merge": "^2.2.1",

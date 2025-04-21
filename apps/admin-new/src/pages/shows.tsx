@@ -42,7 +42,6 @@ import {
 import { Badge } from "@repo/ui/components/ui/badge";
 import { useShowsStore } from "../store/shows";
 import { useVenuesStore } from "../store/venues";
-import { ShowtimeManager } from "../components/shows/ShowtimeManager";
 
 interface ShowFormData {
   title: string;
@@ -278,7 +277,7 @@ export function ShowsPage() {
               Back to Shows
             </Button>
           </header>
-          <ShowtimeManager showId={selectedShowId} />
+          {/* <ShowtimeManager showId={selectedShowId} /> */}
         </div>
       </div>
     );

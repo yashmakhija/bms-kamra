@@ -353,21 +353,43 @@ Areas identified for future development:
 - Waitlist functionality for sold-out shows
 - Notification system for booking updates and promotions
 
-## API Documentation
+## Updated Postman Collection
 
-A detailed Postman collection is included for testing and exploration:
+A complete Postman collection is now available for testing all the API endpoints. This collection includes:
 
-- Import `postman_collection.json` into Postman
-- Create an environment with `base_url` set to your API endpoint
-- Collection includes pre-request scripts for authentication
+- Authentication endpoints (register, login, verify)
+- User management
+- Admin features and analytics
+- Show and event management
+- Booking and payment processing
+- Razorpay integration
 
----
+### How to Use
+
+1. Import the collection into Postman:
+
+   - Open Postman
+   - Click "Import" in the top left
+   - Select the `updated_postman_collection.json` file
+
+2. Set up your environment:
+
+   - Create a new environment in Postman
+   - Set the `baseUrl` variable to your API URL (default: `http://localhost:3091/api`)
+   - Other variables will be automatically populated as you use the collection
+
+3. Testing flow:
+   - Start with the "Health Check" request to verify the API is running
+   - Register a user or login with existing credentials
+   - Create venues, categories, shows, events, and showtimes as an admin
+   - Test booking flow as a regular user
+   - Test payment processing
+
+The collection includes test scripts that automatically save IDs and tokens to your Postman environment, making it easy to run through the entire testing sequence.
 
 ## License
 
 This project is licensed under the ISC License.
-
----
 
 ## Contact
 

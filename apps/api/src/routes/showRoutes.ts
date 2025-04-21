@@ -8,6 +8,7 @@ import {
   createEvent,
   createShowtime,
   createSeatSection,
+  publishShow,
 } from "../controllers/showController";
 import {
   authMiddleware,
@@ -15,6 +16,7 @@ import {
   hasRoleMiddleware,
 } from "../middlewares/authMiddleware";
 import { AdminRole } from "../types";
+import { body } from "express-validator";
 
 const router: Router = Router();
 
@@ -69,7 +71,31 @@ router.post(
   authMiddleware,
   isAdminMiddleware,
   hasRoleMiddleware(["SUPER_ADMIN", "EDITOR"] as AdminRole[]),
+  [
+    body("showtimeId").notEmpty().withMessage("Showtime ID is required"),
+    body("priceTierId").notEmpty().withMessage("Price tier ID is required"),
+    body("name").notEmpty().withMessage("Section name is required"),
+    body("totalSeats")
+      .notEmpty()
+      .withMessage("Total seats is required")
+      .isInt({ min: 1 })
+      .withMessage("Total seats must be a positive integer"),
+    body("availableSeats")
+      .notEmpty()
+      .withMessage("Available seats is required")
+      .isInt({ min: 0 })
+      .withMessage("Available seats must be a non-negative integer"),
+  ],
   createSeatSection
+);
+
+// Publish show route (Admin only)
+router.post(
+  "/:showId/publish",
+  authMiddleware,
+  isAdminMiddleware,
+  hasRoleMiddleware(["SUPER_ADMIN", "EDITOR"] as AdminRole[]),
+  publishShow
 );
 
 export default router;

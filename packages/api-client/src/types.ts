@@ -241,6 +241,11 @@ export interface EventCreateInput {
   date: string; // ISO date string
 }
 
+export interface UpdateEventInput {
+  date?: string; // ISO date string
+  isActive?: boolean;
+}
+
 export interface Showtime {
   id: string;
   startTime: Date;
@@ -259,6 +264,12 @@ export interface ShowtimeCreateInput {
   endTime: string; // ISO date-time string
 }
 
+export interface UpdateShowtimeInput {
+  startTime?: string; // ISO date-time string
+  endTime?: string; // ISO date-time string
+  isActive?: boolean;
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -275,6 +286,13 @@ export interface CategoryCreateInput {
   type: string;
   description?: string;
   capacity?: number;
+}
+
+export interface UpdateCategoryInput {
+  name?: string;
+  description?: string;
+  capacity?: number;
+  isActive?: boolean;
 }
 
 export interface PriceTier {
@@ -298,7 +316,25 @@ export interface PriceTierCreateInput {
   price: number;
   currency?: string;
   description?: string;
-  capacity: number;
+  capacity?: number;
+}
+
+// Custom interface for creating price tiers with category type
+export interface PriceTierCreateWithTypeInput {
+  showId: string;
+  categoryType: string; // "VIP", "PREMIUM", or "REGULAR"
+  price: number;
+  currency?: string;
+  description?: string;
+  capacity?: number;
+}
+
+export interface UpdatePriceTierInput {
+  price?: number;
+  currency?: string;
+  description?: string;
+  capacity?: number;
+  isActive?: boolean;
 }
 
 export interface SeatSection {
@@ -321,6 +357,12 @@ export interface SeatSectionCreateInput {
   availableSeats: number;
 }
 
+export interface UpdateSeatSectionInput {
+  name?: string;
+  availableSeats?: number;
+  isActive?: boolean;
+}
+
 export interface Venue {
   id: string;
   name: string;
@@ -336,4 +378,31 @@ export interface Venue {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface VenueCreateInput {
+  name: string;
+  address: string;
+  city: string;
+  country: string;
+  state?: string;
+  zipCode?: string;
+  capacity?: number;
+  imageUrl?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface UpdateVenueInput {
+  name?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  state?: string;
+  zipCode?: string;
+  capacity?: number;
+  imageUrl?: string;
+  latitude?: number;
+  longitude?: number;
+  isActive?: boolean;
 }

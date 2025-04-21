@@ -91,6 +91,53 @@ await RazorpayClient.initializePayment("booking-id", {
 });
 ```
 
+### Creating a Price Tier
+
+```typescript
+// Create a price tier directly with category ID
+const priceTier = await apiClient.createPriceTier({
+  showId: "show123",
+  categoryId: "category456",
+  price: 1500,
+  currency: "INR",
+  // capacity is optional now
+});
+
+// Or using category type (VIP, PREMIUM, REGULAR)
+const priceTier = await apiClient.createPriceTierWithType({
+  showId: "show123",
+  categoryType: "VIP",
+  price: 1500,
+  currency: "INR",
+  // capacity is optional now
+});
+```
+
+### Creating a Seat Section
+
+There are two ways to create seat sections:
+
+```typescript
+// Method 1: Using the /shows/sections endpoint (recommended for show setup)
+const seatSection = await apiClient.createSeatSectionViaShow({
+  showtimeId: "showtime123",
+  priceTierId: "priceTier123",
+  name: "VIP Section",
+  totalSeats: 100,
+  availableSeats: 100,
+});
+
+// Method 2: Using the dedicated /seat-sections endpoint
+const seatSection = await apiClient.createSeatSection({
+  showtimeId: "showtime123",
+  priceTierId: "priceTier123",
+  name: "VIP Section",
+  availableSeats: 100,
+});
+```
+
+Note: When creating seat sections, you now need to provide a `priceTierId` reference instead of repeating price information.
+
 ## Configuration
 
 The API client is configured with base URL and default headers. You can modify these in the `config.ts` file.

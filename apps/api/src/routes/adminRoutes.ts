@@ -14,6 +14,13 @@ import {
   createAdmin,
 } from "../controllers/adminController";
 
+import {
+  getDashboardStats,
+  getBookingAnalytics,
+  getRevenueStats,
+  getUserStats,
+} from "../controllers/analyticsController";
+
 const router: Router = Router();
 
 // All routes require authentication and admin privileges
@@ -30,7 +37,6 @@ router.get(
   getUserById
 );
 
-
 router.post("/create", isSuperAdminMiddleware, createAdmin);
 
 router.delete(
@@ -38,5 +44,11 @@ router.delete(
   isSuperAdminMiddleware
   /*deleteUser - to be implemented*/
 );
+
+// Dashboard and analytics routes
+router.get("/dashboard/stats", getDashboardStats);
+router.get("/analytics/bookings", getBookingAnalytics);
+router.get("/analytics/revenue", getRevenueStats);
+router.get("/analytics/users", getUserStats);
 
 export default router;

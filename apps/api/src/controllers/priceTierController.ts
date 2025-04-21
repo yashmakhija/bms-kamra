@@ -95,9 +95,9 @@ export const createPriceTier = async (req: AuthRequest, res: Response) => {
       req.body;
 
     // Validate required fields
-    if (!showId || !categoryType || !capacity || !price) {
+    if (!showId || !categoryType || !price) {
       return res.status(StatusCodes.BAD_REQUEST).json({
-        message: "Show ID, category type, capacity, and price are required",
+        message: "Show ID, category type, and price are required",
       });
     }
 
@@ -109,7 +109,10 @@ export const createPriceTier = async (req: AuthRequest, res: Response) => {
     }
 
     // Validate numeric fields
-    if (isNaN(Number(capacity)) || isNaN(Number(price))) {
+    if (
+      (capacity !== undefined && isNaN(Number(capacity))) ||
+      isNaN(Number(price))
+    ) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         message: "Capacity and price must be valid numbers",
       });
@@ -124,7 +127,7 @@ export const createPriceTier = async (req: AuthRequest, res: Response) => {
     const priceTier = await priceTierService.createPriceTier({
       showId,
       categoryId: category.id,
-      capacity: Number(capacity),
+      capacity: capacity !== undefined ? Number(capacity) : undefined,
       price,
       currency,
       description,

@@ -2,7 +2,11 @@ import { Router } from "express";
 import * as priceTierController from "../controllers/priceTierController";
 
 import { body } from "express-validator";
-import { isAdminMiddleware } from "../middlewares/authMiddleware";
+import {
+  isAdminMiddleware,
+  hasRoleMiddleware,
+  authMiddleware,
+} from "../middlewares/authMiddleware";
 
 const router: Router = Router();
 
@@ -18,7 +22,9 @@ router.get("/show/:showId", priceTierController.getPriceTiersByShowId);
 // Create a new price tier (Admin only)
 router.post(
   "/",
+  authMiddleware,
   isAdminMiddleware,
+  hasRoleMiddleware(["SUPER_ADMIN", "EDITOR"]),
   [
     body("showId").notEmpty().withMessage("Show ID is required"),
     body("categoryType")
@@ -27,10 +33,9 @@ router.post(
       .isIn(["VIP", "PREMIUM", "REGULAR"])
       .withMessage("Category type must be one of: VIP, PREMIUM, REGULAR"),
     body("capacity")
-      .notEmpty()
-      .withMessage("Capacity is required")
-      .isInt({ min: 1 })
-      .withMessage("Capacity must be a positive integer"),
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage("Capacity must be a non-negative integer"),
     body("price")
       .notEmpty()
       .withMessage("Price is required")

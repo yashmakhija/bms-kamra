@@ -108,7 +108,7 @@ export const getPriceTiersByShowId = async (showId: string) => {
 export const createPriceTier = async (data: {
   showId: string;
   categoryId: string;
-  capacity: number;
+  capacity?: number;
   price: number | string;
   currency?: string;
   description?: string;
@@ -149,7 +149,7 @@ export const createPriceTier = async (data: {
       data: {
         showId: data.showId,
         categoryId: data.categoryId,
-        capacity: data.capacity,
+        capacity: data.capacity || 0,
         price: priceDecimal,
         currency: data.currency || "INR",
         description: data.description,

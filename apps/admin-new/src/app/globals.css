@@ -1,0 +1,35 @@
+/* Append to the end of the file */
+
+/* Fix for Select dropdown visibility */
+[data-radix-popper-content-wrapper] {
+  z-index: 9999 !important;
+}
+
+/* Add solid background to Select content */
+.select-content {
+  background-color: white !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Dark mode support */
+.dark .select-content {
+  background-color: #18181b !important;
+  border-color: #27272a !important;
+}
+
+/* Improve select item visibility */
+.select-item {
+  border-radius: 4px;
+}
+
+.select-item:hover {
+  background-color: #f1f5f9 !important;
+}
+
+.dark .select-item:hover {
+  background-color: #27272a !important;
+}
+ 

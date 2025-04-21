@@ -1,0 +1,294 @@
+{
+  "updates": [
+    {
+      "section": "Shows & Events",
+      "endpoints": [
+        {
+          "name": "Get Showtimes By Event ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/shows/showtimes/event/{{eventId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shows", "showtimes", "event", "{{eventId}}"]
+            },
+            "description": "Get all showtimes for a specific event (public endpoint)"
+          }
+        },
+        {
+          "name": "Get Events By Show ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/shows/events/show/{{showId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shows", "events", "show", "{{showId}}"]
+            },
+            "description": "Get all events for a specific show (public endpoint)"
+          }
+        }
+      ]
+    },
+    {
+      "section": "Admin",
+      "endpoints": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "dashboard", "stats"]
+            },
+            "description": "Get dashboard statistics for admin - requires SUPER_ADMIN or EDITOR role"
+          }
+        },
+        {
+          "name": "Get Booking Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/bookings?startDate=2023-01-01&endDate=2023-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "analytics", "bookings"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2023-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2023-12-31"
+                }
+              ]
+            },
+            "description": "Get booking analytics - requires SUPER_ADMIN role"
+          }
+        },
+        {
+          "name": "Get Revenue Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/analytics/revenue?startDate=2023-01-01&endDate=2023-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "analytics", "revenue"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2023-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2023-12-31"
+                }
+              ]
+            },
+            "description": "Get revenue statistics - requires SUPER_ADMIN role"
+          }
+        }
+      ]
+    },
+    {
+      "section": "Showtimes",
+      "endpoints": [
+        {
+          "name": "Get Showtime By ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/shows/showtime/{{showtimeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shows", "showtime", "{{showtimeId}}"]
+            },
+            "description": "Get details for a specific showtime (public endpoint)"
+          }
+        },
+        {
+          "name": "Update Showtime (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startTime\": \"2023-12-01T19:00:00Z\",\n  \"endTime\": \"2023-12-01T22:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/shows/showtimes/{{showtimeId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["shows", "showtimes", "{{showtimeId}}"]
+            },
+            "description": "Update an existing showtime (admin only)"
+          }
+        }
+      ]
+    },
+    {
+      "section": "Price Tiers",
+      "endpoints": [
+        {
+          "name": "Create Price Tier (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const priceTierId = pm.response.json().id;",
+                  "    pm.environment.set(\"priceTierId\", priceTierId);",
+                  "    console.log(\"Created price tier ID: \" + priceTierId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"showId\": \"{{showId}}\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"capacity\": 100,\n  \"price\": 1500,\n  \"currency\": \"INR\",\n  \"description\": \"Premium seating\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/price-tiers",
+              "host": ["{{baseUrl}}"],
+              "path": ["price-tiers"]
+            },
+            "description": "Create a new price tier (admin only)"
+          }
+        },
+        {
+          "name": "Update Price Tier (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 1800,\n  \"capacity\": 120,\n  \"description\": \"Updated premium seating\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/price-tiers/{{priceTierId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["price-tiers", "{{priceTierId}}"]
+            },
+            "description": "Update an existing price tier (admin only)"
+          }
+        }
+      ]
+    }
+  ],
+  "environment_variables": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3091/api",
+      "description": "Base URL for the API"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "description": "JWT token for regular users"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "description": "JWT token for admin users"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "description": "ID of the current user"
+    },
+    {
+      "key": "adminId",
+      "value": "",
+      "description": "ID of the admin user"
+    },
+    {
+      "key": "venueId",
+      "value": "",
+      "description": "ID of a venue"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "description": "ID of a category"
+    },
+    {
+      "key": "showId",
+      "value": "",
+      "description": "ID of a show"
+    },
+    {
+      "key": "eventId",
+      "value": "",
+      "description": "ID of an event"
+    },
+    {
+      "key": "showtimeId",
+      "value": "",
+      "description": "ID of a showtime"
+    },
+    {
+      "key": "sectionId",
+      "value": "",
+      "description": "ID of a seat section"
+    },
+    {
+      "key": "priceTierId",
+      "value": "",
+      "description": "ID of a price tier"
+    },
+    {
+      "key": "bookingId",
+      "value": "",
+      "description": "ID of a booking"
+    }
+  ]
+}

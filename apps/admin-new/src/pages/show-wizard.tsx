@@ -1,19 +1,25 @@
+"use client";
+
 import { useEffect } from "react";
-import ShowWizard from "../components/shows/ShowWizard";
-import { useShowWizardStore } from "../store/show-wizard";
+import { useWizardStore } from "../store/wizardStore";
+// import { ShowCreationWizard } from "../components/create-show/ShowCreationWizard";
+import { useEventsFormStore } from "../store/eventsForm";
+import { useShowFormStore } from "../store/showForm";
+import { Wizard } from "../components/wizard";
 
 export function ShowWizardPage() {
-  const { resetWizard } = useShowWizardStore();
+  const { resetWizard } = useWizardStore();
+  const { clearEvents } = useEventsFormStore();
+  const { resetForm } = useShowFormStore();
 
-  // Reset wizard state when component mounts
+  // Reset all wizard state when component mounts
   useEffect(() => {
     resetWizard();
-  }, [resetWizard]);
+    clearEvents();
+    resetForm();
+  }, [resetWizard, clearEvents, resetForm]);
 
-  return (
-    <div className="container mx-auto py-8 mt-12 px-4">
-      <h1 className="text-3xl font-bold mb-8">Create New Show</h1>
-      <ShowWizard />
-    </div>
-  );
+  return <Wizard />;
 }
+
+export default ShowWizardPage;

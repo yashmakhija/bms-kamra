@@ -259,55 +259,49 @@ export const createShowtime = async (req: AuthRequest, res: Response) => {
  */
 export const createSeatSection = async (req: AuthRequest, res: Response) => {
   try {
-    const {
-      showtimeId,
-      categoryId,
-      name,
-      totalSeats,
-      availableSeats,
-      price,
-      currency,
-    } = req.body;
+    const { showtimeId, priceTierId, name, totalSeats, availableSeats } =
+      req.body;
 
     if (
       !showtimeId ||
-      !categoryId ||
+      !priceTierId ||
       !name ||
       !totalSeats ||
-      !availableSeats ||
-      !price
+      !availableSeats
     ) {
       return res.status(400).json({
         message:
-          "Required fields: showtimeId, categoryId, name, totalSeats, availableSeats, price",
+          "Required fields: showtimeId, priceTierId, name, totalSeats, availableSeats",
       });
     }
 
     console.log("Creating seat section with data:", {
       showtimeId,
-      categoryId,
+      priceTierId,
       name,
       totalSeats,
       availableSeats,
-      price,
-      currency,
     });
 
-    // Validate category exists
-    const category = await categoryService.getCategoryById(categoryId);
-    if (!category) {
-      return res.status(400).json({ message: "Invalid category ID" });
+    // Validate price tier exists
+    const priceTier = await prisma.priceTier.findUnique({
+      where: { id: priceTierId },
+      include: {
+        category: true,
+      },
+    });
+
+    if (!priceTier) {
+      return res.status(400).json({ message: "Invalid price tier ID" });
     }
 
-    // Get show ID from showtime to create or find price tier
+    // Validate showtime exists and get show ID
     const showtime = await prisma.showtime.findUnique({
       where: { id: showtimeId },
       include: {
         event: {
-          include: {
-            show: {
-              select: { id: true },
-            },
+          select: {
+            showId: true,
           },
         },
       },
@@ -317,47 +311,19 @@ export const createSeatSection = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: "Invalid showtime ID" });
     }
 
-    const showId = showtime.event.show.id;
-
-    // Find existing price tier or create a new one
-    let priceTier = await prisma.priceTier.findFirst({
-      where: {
-        showId,
-        categoryId,
-      },
-    });
-
-    if (!priceTier) {
-      // Create a new price tier
-      priceTier = await prisma.priceTier.create({
-        data: {
-          showId,
-          categoryId,
-          capacity: Number(totalSeats),
-          price: new Prisma.Decimal(price),
-          currency: currency || "INR",
-        },
+    // Verify that price tier belongs to the show
+    if (priceTier.showId !== showtime.event.showId) {
+      return res.status(400).json({
+        message: "Price tier does not belong to this show",
       });
-      console.log("Created new price tier:", priceTier.id);
-    } else {
-      // Update the existing price tier with new values
-      priceTier = await prisma.priceTier.update({
-        where: { id: priceTier.id },
-        data: {
-          capacity: Number(totalSeats),
-          price: new Prisma.Decimal(price),
-          currency: currency || "INR",
-        },
-      });
-      console.log("Updated existing price tier:", priceTier.id);
     }
 
-    // Create the seat section (without waiting for tickets)
+    // Create the seat section
     const seatSection = await prisma.seatSection.create({
       data: {
         name,
         availableSeats: Number(availableSeats),
-        priceTierId: priceTier.id,
+        priceTierId,
         showtimeId,
       },
       include: {
@@ -404,23 +370,16 @@ export const createSeatSection = async (req: AuthRequest, res: Response) => {
         });
 
         // Invalidate relevant caches
-        const cachePromises = [
-          `show:${showId}:details`,
-          `showtime:${showtimeId}:*`,
-        ].filter(Boolean);
-
-        if (cachePromises.length > 0) {
-          try {
-            const { deleteCache, deleteCachePattern } = await import(
-              "../utils/redis"
-            );
-            await Promise.all([
-              deleteCache(`show:${showId}:details`),
-              deleteCachePattern(`showtime:${showtimeId}:*`),
-            ]);
-          } catch (cacheError) {
-            console.error("Cache invalidation error:", cacheError);
-          }
+        try {
+          const { deleteCache, deleteCachePattern } = await import(
+            "../utils/redis"
+          );
+          await Promise.all([
+            deleteCache(`show:${priceTier.showId}:details`),
+            deleteCachePattern(`showtime:${showtimeId}:*`),
+          ]);
+        } catch (cacheError) {
+          console.error("Cache invalidation error:", cacheError);
         }
 
         console.log(
@@ -441,5 +400,92 @@ export const createSeatSection = async (req: AuthRequest, res: Response) => {
       message: "Failed to create seat section",
       error: error instanceof Error ? error.message : String(error),
     });
+  }
+};
+
+/**
+ * Publish a show (Admin only)
+ * This marks a show as active and ready for public viewing after all configuration is complete
+ */
+export const publishShow = async (req: AuthRequest, res: Response) => {
+  try {
+    const { showId } = req.params;
+
+    // Check if show exists with all its related data
+    const existingShow = await prisma.show.findUnique({
+      where: { id: showId || "" },
+      include: {
+        events: {
+          include: {
+            showtimes: {
+              include: {
+                seatSections: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!existingShow) {
+      return res.status(404).json({ message: "Show not found" });
+    }
+
+    // Check if the show has all required configuration
+    const showHasEvents = existingShow.events && existingShow.events.length > 0;
+    if (!showHasEvents) {
+      return res.status(400).json({
+        message:
+          "Cannot publish show without events. Please add at least one event date.",
+      });
+    }
+
+    // Check if the show has price tiers
+    const priceTiers = await prisma.priceTier.findMany({
+      where: { showId: showId },
+    });
+
+    if (!priceTiers || priceTiers.length === 0) {
+      return res.status(400).json({
+        message:
+          "Cannot publish show without price tiers. Please configure pricing first.",
+      });
+    }
+
+    // Check if the show has showtimes and seat sections
+    let hasSeating = false;
+    for (const event of existingShow.events) {
+      if (event.showtimes && event.showtimes.length > 0) {
+        for (const showtime of event.showtimes) {
+          if (showtime.seatSections && showtime.seatSections.length > 0) {
+            hasSeating = true;
+            break;
+          }
+        }
+      }
+
+      if (hasSeating) break;
+    }
+
+    if (!hasSeating) {
+      return res.status(400).json({
+        message:
+          "Cannot publish show without seat sections. Please configure seating first.",
+      });
+    }
+
+    // Update the show to set isActive to true
+    const updatedShow = await showService.updateShow(showId || "", {
+      isActive: true,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Show published successfully",
+      data: updatedShow,
+    });
+  } catch (error) {
+    console.error("Publish show error:", error);
+    return res.status(500).json({ message: "Failed to publish show" });
   }
 };

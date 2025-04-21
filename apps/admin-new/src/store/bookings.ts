@@ -1,14 +1,9 @@
 import { create } from "zustand";
 import { apiClient } from "@repo/api-client";
+import type { Booking as ApiBooking, BookingStatus } from "@repo/api-client";
 
-export interface Booking {
-  id: string;
-  showId: string;
-  userId: string;
-  status: "CONFIRMED" | "PENDING" | "CANCELLED";
-  totalAmount: number;
-  bookingDate: Date;
-  seats: {
+export interface Booking extends Omit<ApiBooking, "tickets"> {
+  seats?: {
     id: string;
     sectionId: string;
     sectionName?: string;
@@ -28,157 +23,85 @@ export interface Booking {
 
 interface BookingsState {
   bookings: Booking[];
+  totalBookings: number;
+  currentPage: number;
+  totalPages: number;
+  pageSize: number;
   isLoading: boolean;
   error: string | null;
-  fetchAllBookings: () => Promise<void>;
+  fetchAllBookings: (
+    page?: number,
+    limit?: number,
+    status?: string,
+    userId?: string,
+    showId?: string
+  ) => Promise<void>;
   fetchBookingsByShowId: (showId: string) => Promise<void>;
 }
 
-export const useBookingsStore = create<BookingsState>((set) => ({
+export const useBookingsStore = create<BookingsState>((set, get) => ({
   bookings: [],
+  totalBookings: 0,
+  currentPage: 1,
+  totalPages: 1,
+  pageSize: 20,
   isLoading: false,
   error: null,
 
-  fetchAllBookings: async () => {
+  fetchAllBookings: async (page = 1, limit = 20, status, userId, showId) => {
     set({ isLoading: true, error: null });
     try {
-      // In a real implementation, this would be an API call
-      // Mock data for demonstration purposes
-      const mockBookings: Booking[] = [
-        {
-          id: "1",
-          showId: "show1",
-          userId: "user1",
-          status: "CONFIRMED",
-          totalAmount: 1500,
-          bookingDate: new Date(),
-          seats: [
-            {
-              id: "seat1",
-              sectionId: "section1",
-              sectionName: "Gold",
-              price: 750,
-            },
-            {
-              id: "seat2",
-              sectionId: "section1",
-              sectionName: "Gold",
-              price: 750,
-            },
-          ],
-          user: {
-            name: "Rahul Sharma",
-            email: "rahul@example.com",
-            phone: "+91987654321",
-          },
-          show: {
-            title: "Comedy Night with Kunal",
-            date: "2023-09-15",
-            venue: "Town Hall Delhi",
-          },
-        },
-        {
-          id: "2",
-          showId: "show1",
-          userId: "user2",
-          status: "PENDING",
-          totalAmount: 2200,
-          bookingDate: new Date(),
-          seats: [
-            {
-              id: "seat3",
-              sectionId: "section2",
-              sectionName: "VIP",
-              price: 1100,
-            },
-            {
-              id: "seat4",
-              sectionId: "section2",
-              sectionName: "VIP",
-              price: 1100,
-            },
-          ],
-          user: {
-            name: "Priya Patel",
-            email: "priya@example.com",
-            phone: "+91876543210",
-          },
-          show: {
-            title: "Comedy Night with Kunal",
-            date: "2023-09-15",
-            venue: "Town Hall Delhi",
-          },
-        },
-        {
-          id: "3",
-          showId: "show2",
-          userId: "user3",
-          status: "CANCELLED",
-          totalAmount: 1800,
-          bookingDate: new Date(),
-          seats: [
-            {
-              id: "seat5",
-              sectionId: "section1",
-              sectionName: "Gold",
-              price: 900,
-            },
-            {
-              id: "seat6",
-              sectionId: "section1",
-              sectionName: "Gold",
-              price: 900,
-            },
-          ],
-          user: {
-            name: "Amit Kumar",
-            email: "amit@example.com",
-            phone: "+91765432109",
-          },
-          show: {
-            title: "Kunal Kamra Live",
-            date: "2023-09-20",
-            venue: "Comedy Club Mumbai",
-          },
-        },
-        {
-          id: "4",
-          showId: "show3",
-          userId: "user4",
-          status: "CONFIRMED",
-          totalAmount: 2500,
-          bookingDate: new Date(),
-          seats: [
-            {
-              id: "seat7",
-              sectionId: "section3",
-              sectionName: "Platinum",
-              price: 1250,
-            },
-            {
-              id: "seat8",
-              sectionId: "section3",
-              sectionName: "Platinum",
-              price: 1250,
-            },
-          ],
-          user: {
-            name: "Sneha Reddy",
-            email: "sneha@example.com",
-            phone: "+91654321098",
-          },
-          show: {
-            title: "Political Comedy Special",
-            date: "2023-09-25",
-            venue: "Laugh Factory Bangalore",
-          },
-        },
-      ];
+      // Call the admin API to get all bookings with filters
+      const response = await apiClient.getAllBookings(
+        page,
+        limit,
+        status,
+        userId,
+        showId
+      );
 
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // Transform the bookings to match our UI structure
+      const transformedBookings: Booking[] = response.bookings.map(
+        (booking: ApiBooking) => {
+          // Extract ticket information for our UI
+          const seats =
+            booking.tickets?.map((ticket) => ({
+              id: ticket.id,
+              sectionId: ticket.sectionId,
+              sectionName: "Unknown Section", // This would come from the section data
+              price:
+                typeof ticket.price === "number"
+                  ? ticket.price
+                  : parseFloat(ticket.price as any),
+            })) || [];
 
-      set({ bookings: mockBookings, isLoading: false });
+          // Format for our UI
+          return {
+            ...booking,
+            seats,
+            // Add additional UI-specific fields that may come from joins in a real API
+          user: {
+              name: "Customer", // This would come from the user data
+              email: "customer@example.com", // This would come from the user data
+              phone: "", // This would come from the user data
+          },
+          show: {
+              title: "Show Title", // This would come from the show data
+              date: new Date().toISOString(), // This would come from the event data
+              venue: "Venue Name", // This would come from the venue data
+          },
+          };
+        }
+      );
+
+      set({
+        bookings: transformedBookings,
+        totalBookings: response.total,
+        currentPage: response.page,
+        totalPages: Math.ceil(response.total / response.limit),
+        pageSize: response.limit,
+        isLoading: false,
+      });
     } catch (error) {
       console.error("Error fetching bookings:", error);
       set({ error: "Failed to load bookings", isLoading: false });
@@ -188,18 +111,8 @@ export const useBookingsStore = create<BookingsState>((set) => ({
   fetchBookingsByShowId: async (showId) => {
     set({ isLoading: true, error: null });
     try {
-      // In a real implementation, this would be filtered by the API
-      // For mock data, we'll filter client-side
-
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      const { bookings } = useBookingsStore.getState();
-      const filteredBookings = bookings.filter(
-        (booking) => booking.showId === showId
-      );
-
-      set({ bookings: filteredBookings, isLoading: false });
+      // Use the same fetchAllBookings method with a showId filter
+      await get().fetchAllBookings(1, 100, undefined, undefined, showId);
     } catch (error) {
       console.error(`Error fetching bookings for show ${showId}:`, error);
       set({ error: "Failed to load bookings for this show", isLoading: false });

@@ -1,79 +1,59 @@
 import { RecentShow } from "../../store/dashboard";
+import { Calendar, MapPin, Tag } from "lucide-react";
+import { Button } from "@repo/ui/components/ui/button";
 import { Link } from "react-router-dom";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@repo/ui/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@repo/ui/components/ui/table";
 
-interface RecentShowsTableProps {
+export interface RecentShowsTableProps {
   shows: RecentShow[];
 }
 
 export function RecentShowsTable({ shows }: RecentShowsTableProps) {
+  if (!shows || shows.length === 0) {
+    return (
+      <div className="py-4 text-center">
+        <p className="text-muted-foreground text-sm">No recent shows found</p>
+        <Button variant="link" size="sm" className="mt-2" asChild>
+          <Link to="/shows/new">Create your first show</Link>
+        </Button>
+      </div>
+    );
+  }
+
   return (
-    <Card className="lg:col-span-2">
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-lg">Recent Shows</CardTitle>
+    <div className="space-y-4">
+      {shows.slice(0, 5).map((show) => (
           <Link
-            to="/shows"
-            className="text-sm text-primary hover:text-primary/80 font-medium"
-          >
-            View All
-          </Link>
+          key={show.id}
+          to={`/shows/${show.id}`}
+          className="block p-3 rounded-lg hover:bg-accent/50 transition-colors border border-border"
+        >
+          <div className="mb-1">
+            <h3 className="font-medium text-sm text-foreground line-clamp-1">
+              {show.title}
+            </h3>
+          </div>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <div className="flex items-center">
+              <Calendar className="h-3.5 w-3.5 mr-1.5" />
+              {show.date}
+            </div>
+            <div className="flex items-center">
+              <MapPin className="h-3.5 w-3.5 mr-1.5" />
+              {show.venue}
+            </div>
+          </div>
+          <div className="flex justify-between items-center mt-2 pt-2 border-t border-border text-xs">
+            <div className="text-muted-foreground">
+              Tickets sold:{" "}
+              <span className="font-medium">{show.ticketsSold}</span>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Show</TableHead>
-                <TableHead>Date & Time</TableHead>
-                <TableHead>Venue</TableHead>
-                <TableHead>Tickets Sold</TableHead>
-                <TableHead>Revenue</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {shows.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="text-center py-6 text-muted-foreground"
-                  >
-                    No recent shows found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                shows.map((show) => (
-                  <TableRow key={show.id}>
-                    <TableCell className="font-medium">{show.title}</TableCell>
-                    <TableCell>
-                      {new Date(show.date).toLocaleDateString()} • {show.time}
-                    </TableCell>
-                    <TableCell>{show.venue}</TableCell>
-                    <TableCell>{show.ticketsSold}</TableCell>
-                    <TableCell className="font-medium">
+            <div className="flex items-center text-foreground font-medium">
+              <Tag className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
                       {show.revenue}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+            </div>
+          </div>
+        </Link>
+      ))}
         </div>
-      </CardContent>
-    </Card>
   );
 }
