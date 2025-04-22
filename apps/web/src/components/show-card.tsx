@@ -12,6 +12,7 @@ interface ShowCardProps extends React.HTMLAttributes<HTMLDivElement> {
   aspectRatio?: "portrait" | "square";
   width?: number;
   height?: number;
+  link?: string;
 }
 
 export function ShowCard({
@@ -24,15 +25,27 @@ export function ShowCard({
   aspectRatio = "portrait",
   width,
   height,
+  link,
+  onClick,
   ...props
 }: ShowCardProps) {
+  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (link) {
+      e.stopPropagation();
+      window.open(link, "_blank", "noopener,noreferrer");
+    } else if (onClick) {
+      onClick(e as any);
+    }
+  };
+
   return (
     <div
       className={cn(
-        "relative group w-full shrink-0 cursor-pointer px-2",
-        "sm:min-w-[75vw] md:min-w-[300px] md:w-full md:px-0", // Adjusted width for better mobile view
+        "relative group w-full shrink-0 cursor-pointer px-2 rounded-[20.12px]",
+        "sm:min-w-[55vw] md:min-w-[300px] md:w-full md:px-0", // Adjusted width for better mobile view
         className
       )}
+      onClick={handleClick}
       {...props}
     >
       <div className="overflow-hidden rounded-xl bg-neutral-800 aspect-video max-w-[500px] mx-auto">
@@ -45,7 +58,10 @@ export function ShowCard({
         />
       </div>
       <div className="mt-3 space-y-1 max-w-[500px] mx-auto">
-        <h3 className="font-medium text-neutral-50 text-base sm:text-lg md:text-lg leading-tight line-clamp-2">
+        <h3
+          className="font-medium text-neutral-50 text-base sm:text-lg md:text-lg leading-tight line-clamp-2 cursor-pointer"
+          onClick={handleClick}
+        >
           {title}
         </h3>
         {artist && (

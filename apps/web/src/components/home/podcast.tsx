@@ -11,7 +11,7 @@ interface LatestShow {
   id: string;
   title: string;
   image: string;
-  link: string;
+  link?: string;
 }
 
 interface ScrollState {
@@ -29,10 +29,11 @@ const useScrollStore = create<ScrollState>((set) => ({
 
 interface LatestUploadsProps {
   shows: LatestShow[];
+  title: string;
   className?: string;
 }
 
-export function LatestUploads({ shows, className }: LatestUploadsProps) {
+export function Podcast({ shows, title, className }: LatestUploadsProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { setScrollState } = useScrollStore();
 
@@ -57,7 +58,7 @@ export function LatestUploads({ shows, className }: LatestUploadsProps) {
       <div className="container mx-auto px-4 md:px-8 lg:px-30">
         <div className="flex justify-between items-center mb-8">
           <div className="text-white text-3xl font-bold leading-10">
-            Latest Uploads
+            {title}
           </div>
 
           <div className="sm:hidden md:block">
@@ -103,6 +104,7 @@ export function LatestUploads({ shows, className }: LatestUploadsProps) {
           </div>
         </div>
 
+        {/* Desktop View: 3-Column Grid */}
         <div className="hidden xl:block">
           <div className="grid grid-cols-3 gap-19">
             {shows.map((show) => (

@@ -17,16 +17,19 @@ These are set in the `.env` file at the root of the API application.
 ## Integration Flow
 
 1. **Creating a Payment Order**
+
    - When a user proceeds to payment, the frontend calls `POST /api/razorpay/orders/:bookingId`
    - The backend creates a Razorpay order using the booking details
    - The order details (orderId, amount, currency, keyId) are returned to the client
 
 2. **Processing Payment**
+
    - The client loads the Razorpay checkout using the orderId and other details
    - User completes payment through Razorpay's interface
    - Razorpay sends back payment details to the client
 
 3. **Verifying Payment**
+
    - Client sends payment verification details to `POST /api/razorpay/verify/:bookingId`
    - Backend verifies the signature to ensure the payment is legitimate
    - Backend updates the booking status to PAID if verification is successful
@@ -38,13 +41,13 @@ These are set in the `.env` file at the root of the API application.
 
 ## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/razorpay/status` | GET | Check if Razorpay is properly configured |
-| `/api/razorpay/orders/:bookingId` | POST | Create a Razorpay order for a booking |
-| `/api/razorpay/verify/:bookingId` | POST | Verify a Razorpay payment |
-| `/api/razorpay/webhook` | POST | Webhook endpoint for Razorpay callbacks |
-| `/api/razorpay/refund/:paymentId` | POST | Initiate a refund (admin only) |
+| Endpoint                          | Method | Description                              |
+| --------------------------------- | ------ | ---------------------------------------- |
+| `/api/razorpay/status`            | GET    | Check if Razorpay is properly configured |
+| `/api/razorpay/orders/:bookingId` | POST   | Create a Razorpay order for a booking    |
+| `/api/razorpay/verify/:bookingId` | POST   | Verify a Razorpay payment                |
+| `/api/razorpay/webhook`           | POST   | Webhook endpoint for Razorpay callbacks  |
+| `/api/razorpay/refund/:paymentId` | POST   | Initiate a refund (admin only)           |
 
 ## Implementation Details
 
@@ -58,11 +61,13 @@ The Razorpay integration is implemented in the following files:
 
 Common issues:
 
-1. **Payment verification fails**: 
+1. **Payment verification fails**:
+
    - Check if RAZORPAY_KEY_SECRET is correct
    - Ensure the signature calculation uses the right string format
 
 2. **Webhook isn't working**:
+
    - Verify RAZORPAY_WEBHOOK_SECRET is correctly set
    - Make sure the webhook URL is publicly accessible
    - Check Razorpay dashboard for webhook delivery status
@@ -81,4 +86,4 @@ For testing in development mode:
 3. Use any future date for the expiry
 4. Use any 3-digit number for CVV
 5. Use `success@razorpay.com` for email
-6. Use any password for the OTP screen 
+6. Use any password for the OTP screen
