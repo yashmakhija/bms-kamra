@@ -32,6 +32,12 @@ export function PaymentProcessingPage() {
 
   useEffect(() => {
     if (!bookingId) return;
+
+    if (paymentSuccess) {
+      navigate(`/payment/success/${bookingId}`);
+    } else if (paymentError) {
+      setIsModalOpen(false);
+    }
   }, [paymentSuccess, paymentError, isProcessingPayment, bookingId, navigate]);
 
   const handleCloseModal = () => {

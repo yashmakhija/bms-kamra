@@ -178,14 +178,19 @@ export function PaymentModal({
               response.razorpay_payment_id,
               response.razorpay_order_id,
               response.razorpay_signature
-            );
+            ).then((success) => {
+              if (success) {
+                // Redirect to success page on successful verification
+                navigate(`/payment/success/${actualBookingId}`);
+              }
+            });
           },
           modal: {
             ondismiss: function () {
               console.log("Payment modal dismissed by user");
-              // Just update the payment status, don't auto-redirect
-              // This allows the parent component to control the flow
+              // Redirect to cancel page when user dismisses
               resetPaymentStatus();
+              navigate(`/payment/cancel/${actualBookingId}`);
             },
           },
         };
@@ -258,6 +263,7 @@ export function PaymentModal({
     user,
     verifyRazorpayPayment,
     resetPaymentStatus,
+    navigate,
   ]);
 
   // Handle view booking click after successful payment

@@ -45,7 +45,7 @@ export function AdminLoginForm({ onSuccess }: AdminLoginFormProps) {
       </div>
 
       <div className="space-y-3">
-        <Label htmlFor="email" className="text-gray-700 font-medium">
+        <Label htmlFor="email" className="text-blue-700 font-medium">
           Email
         </Label>
         <div className="relative">
@@ -58,7 +58,7 @@ export function AdminLoginForm({ onSuccess }: AdminLoginFormProps) {
             placeholder="admin@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="pl-10 h-11 rounded-lg border-gray-200 focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50 transition-colors"
+            className="pl-10 h-11 rounded-lg text-black border-gray-200 focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50 transition-colors"
             required
           />
         </div>
@@ -66,7 +66,7 @@ export function AdminLoginForm({ onSuccess }: AdminLoginFormProps) {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label htmlFor="password" className="text-gray-700 font-medium">
+          <Label htmlFor="password" className="text-blue-700 font-medium">
             Password
           </Label>
         </div>
@@ -80,7 +80,7 @@ export function AdminLoginForm({ onSuccess }: AdminLoginFormProps) {
             placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="pl-10 h-11 rounded-lg border-gray-200 focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50 transition-colors"
+            className="pl-10 h-11 rounded-lg border-gray-200 text-black focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50 transition-colors"
             required
           />
         </div>
