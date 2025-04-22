@@ -10,7 +10,7 @@ import { ProtectedRoute } from "./components/auth/protected-route";
 import PaymentProcessingPage from "./pages/payment";
 import PaymentSuccessPage from "./pages/payment/success";
 import PaymentCancelPage from "./pages/payment/cancel";
-
+import Tickets from "./pages/tickets";
 function App() {
   return (
     <AuthProvider>
@@ -68,7 +68,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-
+          <Route path="/tickets" element={<Tickets />} />
           {/* Fallback route */}
           <Route path="*" element={<div>Page not found</div>} />
         </Routes>
