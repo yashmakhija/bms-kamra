@@ -36,7 +36,6 @@ export const reportQueue = new Queue("report", {
   connection: redisConnection,
   defaultJobOptions: {
     attempts: 2,
-    timeout: 300000, // 5 minutes
     removeOnComplete: true,
     removeOnFail: 100,
   },

@@ -2,6 +2,11 @@ import { create } from "zustand";
 import { apiClient, Show as ApiShow, PriceTier } from "@repo/api-client";
 import { ticketData } from "../components/ticket/ticket";
 
+// Extend the ApiShow interface to include priceTiers
+interface ExtendedApiShow extends ApiShow {
+  priceTiers?: PriceTier[];
+}
+
 export interface Show {
   id: string;
   title: string;
@@ -17,7 +22,7 @@ export interface Show {
 
 interface ShowsState {
   shows: Show[];
-  apiShows: ApiShow[];
+  apiShows: ExtendedApiShow[];
   selectedShowId: string | null;
   isLoading: boolean;
   isError: boolean;
@@ -32,7 +37,7 @@ interface ShowsState {
 }
 
 // Map API show to UI show format
-const transformApiShow = (apiShow: ApiShow): Show => {
+const transformApiShow = (apiShow: ExtendedApiShow): Show => {
   // Find the lowest price tier for the show
   const lowestPriceTier =
     apiShow.priceTiers && apiShow.priceTiers.length > 0
@@ -70,7 +75,7 @@ const transformApiShow = (apiShow: ApiShow): Show => {
 };
 
 // Create a dynamic map of show IDs to ticket IDs
-const createShowToTicketMap = (shows: ApiShow[]) => {
+const createShowToTicketMap = (shows: ExtendedApiShow[]) => {
   const map: Record<string, string> = {};
   shows.forEach((show, index) => {
     map[show.id] = `${ticketData.id}-${index + 1}`;
