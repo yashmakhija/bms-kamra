@@ -77,6 +77,11 @@ export async function createOrder(
   keyId: string;
 }> {
   if (!initialized) {
+    logger.error("Razorpay not properly configured for createOrder", {
+      keyId: process.env.RAZORPAY_KEY_ID ? "Set" : "Not set",
+      keySecret: process.env.RAZORPAY_KEY_SECRET ? "Set" : "Not set",
+      webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET ? "Set" : "Not set",
+    });
     throw new AppError(
       "Payment gateway is not properly configured",
       StatusCodes.SERVICE_UNAVAILABLE
@@ -118,6 +123,12 @@ export async function createOrder(
             userId: booking.userId,
           };
 
+          logger.info(`Attempting to create Razorpay order`, {
+            bookingId,
+            amount: amountInPaise,
+            currency: booking.currency || "INR",
+          });
+
           // Create the order - await the Promise to get the actual order object
           const order = await razorpay.orders.create({
             amount: amountInPaise,
@@ -131,6 +142,10 @@ export async function createOrder(
             orderId: order.id,
             amount: amountInPaise,
           });
+
+          if (!order || !order.id) {
+            throw new Error("Razorpay order creation failed: Invalid response");
+          }
 
           // Update booking with order ID
           await prisma.booking.update({
@@ -149,14 +164,16 @@ export async function createOrder(
         } catch (error) {
           lastError = error as Error;
 
-          // Log the error
+          // Log the error with detailed information
           logger.error(`Razorpay order creation failed (attempt ${attempt})`, {
-            error: (error as Error).message,
+            error: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : undefined,
             bookingId,
+            razorpayKeyId: process.env.RAZORPAY_KEY_ID ? "Set" : "Not set",
           });
 
           // Only retry on network errors or server errors
-          const errorMsg = (error as Error).message.toLowerCase();
+          const errorMsg = String(error).toLowerCase();
           const shouldRetry =
             errorMsg.includes("network") ||
             errorMsg.includes("timeout") ||
@@ -209,28 +226,48 @@ export function verifyPaymentSignature(params: {
   razorpaySignature: string;
 }): boolean {
   if (!initialized) {
-    throw new AppError(
-      "Payment gateway is not properly configured",
-      StatusCodes.SERVICE_UNAVAILABLE
+    logger.error(
+      "Razorpay not properly configured for signature verification",
+      {
+        keyId: process.env.RAZORPAY_KEY_ID ? "Set" : "Not set",
+        keySecret: process.env.RAZORPAY_KEY_SECRET ? "Set" : "Not set",
+      }
     );
+    return false;
   }
 
   try {
     const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = params;
 
-    // Create the signature verification text (order_id + "|" + payment_id)
-    const expectedSignature = createHmac(
-      "sha256",
-      process.env.RAZORPAY_KEY_SECRET || ""
-    )
-      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-      .digest("hex");
+    // Validate inputs
+    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+      logger.warn("Missing required parameters for signature verification", {
+        hasOrderId: !!razorpayOrderId,
+        hasPaymentId: !!razorpayPaymentId,
+        hasSignature: !!razorpaySignature,
+      });
+      return false;
+    }
 
-    // Compare expected and actual signatures
+    // Generate the signature to verify
+    const hmac = createHmac("sha256", process.env.RAZORPAY_KEY_SECRET || "");
+
+    const data = `${razorpayOrderId}|${razorpayPaymentId}`;
+    hmac.update(data);
+    const expectedSignature = hmac.digest("hex");
+
+    // Check if signatures match
     const isValid = expectedSignature === razorpaySignature;
 
     if (!isValid) {
       logger.warn("Invalid Razorpay signature", {
+        razorpayOrderId,
+        razorpayPaymentId,
+        expectedLength: expectedSignature.length,
+        receivedLength: razorpaySignature.length,
+      });
+    } else {
+      logger.info("Razorpay payment signature verified successfully", {
         razorpayOrderId,
         razorpayPaymentId,
       });
@@ -239,7 +276,8 @@ export function verifyPaymentSignature(params: {
     return isValid;
   } catch (error) {
     logger.error("Error verifying Razorpay signature", {
-      error: (error as Error).message,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
     });
     return false;
   }

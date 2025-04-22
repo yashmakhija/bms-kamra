@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { apiClient, Show as ApiShow, PriceTier } from "@repo/api-client";
 import { ticketData } from "../components/ticket/ticket";
 
 export interface Show {
@@ -16,34 +17,104 @@ export interface Show {
 
 interface ShowsState {
   shows: Show[];
+  apiShows: ApiShow[];
   selectedShowId: string | null;
   isLoading: boolean;
+  isError: boolean;
+  errorMessage: string | null;
+
+  // Actions
+  fetchShows: () => Promise<void>;
   setShows: (shows: Show[]) => void;
   selectShow: (id: string) => void;
   setLoading: (loading: boolean) => void;
   getTicketIdFromShowId: (showId: string) => string;
 }
 
-// Map show IDs to ticket IDs
-const showToTicketMap = {
-  "1": `${ticketData.id}-1`,
-  "2": `${ticketData.id}-2`,
-  "3": `${ticketData.id}-3`,
-  "4": `${ticketData.id}-4`,
-  "5": `${ticketData.id}-5`,
-  "6": `${ticketData.id}-6`,
+// Map API show to UI show format
+const transformApiShow = (apiShow: ApiShow): Show => {
+  // Find the lowest price tier for the show
+  const lowestPriceTier =
+    apiShow.priceTiers && apiShow.priceTiers.length > 0
+      ? apiShow.priceTiers.reduce((lowest: PriceTier, current: PriceTier) => {
+          return Number(current.price) < Number(lowest.price)
+            ? current
+            : lowest;
+        }, apiShow.priceTiers[0])
+      : null;
+
+  // For demo purposes, we'll create some default date/time values
+  // In a real app, you would get these from events and showtimes
+  const today = new Date();
+  const futureDate = new Date(today);
+  futureDate.setDate(today.getDate() + 30); // 30 days in future
+
+  return {
+    id: apiShow.id,
+    title: apiShow.title,
+    date: new Date(futureDate).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }),
+    time: "8:00 PM", // Default time (in real app would come from showtimes)
+    duration: `${apiShow.duration} mins`,
+    venue: apiShow.venue
+      ? `${apiShow.venue.name}, ${apiShow.venue.city}`
+      : "TBD",
+    price: {
+      amount: lowestPriceTier ? Number(lowestPriceTier.price) : 0,
+      currency: "₹",
+    },
+  };
 };
 
-export const useShowsStore = create<ShowsState>((set) => ({
+// Create a dynamic map of show IDs to ticket IDs
+const createShowToTicketMap = (shows: ApiShow[]) => {
+  const map: Record<string, string> = {};
+  shows.forEach((show, index) => {
+    map[show.id] = `${ticketData.id}-${index + 1}`;
+  });
+  return map;
+};
+
+export const useShowsStore = create<ShowsState>((set, get) => ({
   shows: [],
+  apiShows: [],
   selectedShowId: null,
   isLoading: false,
+  isError: false,
+  errorMessage: null,
+
+  fetchShows: async () => {
+    try {
+      set({ isLoading: true, isError: false, errorMessage: null });
+      const response = await apiClient.getAllShows();
+
+      // Store the original API response
+      set({ apiShows: response.shows });
+
+      // Transform API shows to UI format
+      const transformedShows = response.shows.map(transformApiShow);
+
+      set({ shows: transformedShows, isLoading: false });
+    } catch (error) {
+      console.error("Failed to fetch shows:", error);
+      set({
+        isLoading: false,
+        isError: true,
+        errorMessage:
+          error instanceof Error ? error.message : "Failed to fetch shows",
+      });
+    }
+  },
+
   setShows: (shows: Show[]) => set({ shows }),
   selectShow: (id: string) => set({ selectedShowId: id }),
   setLoading: (loading: boolean) => set({ isLoading: loading }),
   getTicketIdFromShowId: (showId: string) => {
-    return (
-      showToTicketMap[showId as keyof typeof showToTicketMap] || ticketData.id
-    );
+    const { apiShows } = get();
+    const showToTicketMap = createShowToTicketMap(apiShows);
+    return showToTicketMap[showId] || ticketData.id;
   },
 }));

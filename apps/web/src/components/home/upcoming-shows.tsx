@@ -1,8 +1,15 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Show, useShowsStore } from "../../store/shows";
-import { Calendar, Clock, Timer, MapPin } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  Timer,
+  MapPin,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
 import { cn } from "@repo/ui/utils";
 import { useNavigate } from "react-router-dom";
 
@@ -116,40 +123,105 @@ function ShowCard({ show, onClick, isSelected, isLoading }: ShowCardProps) {
 }
 
 interface UpcomingShowsProps {
-  shows: Show[];
+  shows?: Show[];
   className?: string;
 }
 
-export function UpcomingShows({ shows, className }: UpcomingShowsProps) {
+export function UpcomingShows({
+  shows: propShows,
+  className,
+}: UpcomingShowsProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const selectedShowId = useShowsStore((state) => state.selectedShowId);
-  const isLoading = useShowsStore((state) => state.isLoading);
-  const setShows = useShowsStore((state) => state.setShows);
-  const selectShow = useShowsStore((state) => state.selectShow);
-  const setLoading = useShowsStore((state) => state.setLoading);
-  const getTicketIdFromShowId = useShowsStore(
-    (state) => state.getTicketIdFromShowId
-  );
   const navigate = useNavigate();
 
+  // Get state and actions from store
+  const {
+    shows: storeShows,
+    selectedShowId,
+    isLoading,
+    isError,
+    errorMessage,
+    fetchShows,
+    selectShow,
+    setLoading,
+    getTicketIdFromShowId,
+  } = useShowsStore();
+
+  // Use API shows if no props were passed
+  const shows = propShows || storeShows;
+
+  // Fetch shows from API on component mount
   useEffect(() => {
-    setShows(shows);
-  }, [shows, setShows]);
+    if (!propShows) {
+      fetchShows();
+    }
+  }, [fetchShows, propShows]);
 
   const handleShowSelect = async (id: string) => {
     if (isLoading) return;
     setLoading(true);
     try {
       selectShow(id);
-      // Get the corresponding ticket ID and navigate to it
-      const ticketId = getTicketIdFromShowId(id);
-      navigate(`/tickets/${ticketId}`);
+      // Navigate directly to the show page using the show ID
+      navigate(`/shows/${id}`);
     } catch (error) {
       console.error("Failed to select show:", error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Loading state
+  if (isLoading && shows.length === 0) {
+    return (
+      <section
+        className={cn("w-full py-24 bg-[#171717] text-center", className)}
+      >
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col items-center justify-center">
+            <Loader2 className="w-10 h-10 text-[#e31001] animate-spin mb-4" />
+            <p className="text-white text-lg">Loading upcoming shows...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Error state
+  if (isError) {
+    return (
+      <section
+        className={cn("w-full py-24 bg-[#171717] text-center", className)}
+      >
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col items-center justify-center">
+            <AlertCircle className="w-10 h-10 text-[#e31001] mb-4" />
+            <p className="text-white text-lg">
+              {errorMessage || "Failed to load shows. Please try again later."}
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // No shows state
+  if (shows.length === 0) {
+    return (
+      <section
+        className={cn("w-full py-24 bg-[#171717] text-center", className)}
+      >
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col items-center justify-center">
+            <AlertCircle className="w-10 h-10 text-[#e31001] mb-4" />
+            <p className="text-white text-lg">
+              No upcoming shows at the moment. Check back later!
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={cn("w-full py-12 bg-[#171717]", className)}>

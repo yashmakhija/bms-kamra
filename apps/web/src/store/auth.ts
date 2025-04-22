@@ -11,6 +11,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  verifyChecked: boolean; // Flag to track if auth has been verified
 
   // Auth actions
   login: (credentials: LoginRequest) => Promise<void>;
@@ -20,6 +21,7 @@ interface AuthState {
   loginWithPhone: (phone: string, otpCode: string) => Promise<void>;
   requestOtp: (phone: string) => Promise<{ message: string; code?: string }>;
   refreshUser: () => Promise<void>;
+  verifyAuth: () => Promise<boolean>; // New method to verify authentication
 
   // UI state
   setLoading: (isLoading: boolean) => void;
@@ -32,6 +34,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   isAuthenticated: apiClient.isAuthenticated(),
   isLoading: false,
   error: null,
+  verifyChecked: false, 
 
   login: async (credentials) => {
     try {
@@ -41,6 +44,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: response.user,
         isAuthenticated: true,
         isLoading: false,
+        verifyChecked: true, 
       });
     } catch (error: any) {
       set({
@@ -59,6 +63,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: response.user,
         isAuthenticated: true,
         isLoading: false,
+        verifyChecked: true, // Mark as verified after successful registration
       });
     } catch (error: any) {
       set({
@@ -71,7 +76,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: () => {
     apiClient.logout();
-    set({ user: null, isAuthenticated: false });
+    set({
+      user: null,
+      isAuthenticated: false,
+      verifyChecked: true, // Mark as verified after logout
+    });
   },
 
   loginWithGoogle: async (idToken) => {
@@ -82,6 +91,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: response.user,
         isAuthenticated: true,
         isLoading: false,
+        verifyChecked: true, // Mark as verified after successful login
       });
     } catch (error: any) {
       set({
@@ -115,6 +125,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: response.user,
         isAuthenticated: true,
         isLoading: false,
+        verifyChecked: true, // Mark as verified after successful login
       });
     } catch (error: any) {
       set({
@@ -138,6 +149,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         get().logout();
       }
       set({ isLoading: false });
+    }
+  },
+
+  // New method to verify authentication with the server
+  verifyAuth: async () => {
+    try {
+      set({ isLoading: true });
+      const { authenticated, user } = await apiClient.verifyAuth();
+
+      // Update the auth state based on server response
+      set({
+        isAuthenticated: authenticated,
+        user: authenticated ? user || get().user : null,
+        isLoading: false,
+        verifyChecked: true, // Mark verification as completed
+      });
+
+      return authenticated;
+    } catch (error) {
+      // If verification fails, assume not authenticated
+      set({
+        isAuthenticated: false,
+        user: null,
+        isLoading: false,
+        verifyChecked: true, // Mark verification as completed
+      });
+      return false;
     }
   },
 

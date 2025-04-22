@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, Request, Response } from "express";
 import {
   authMiddleware,
   isAdminMiddleware,
@@ -12,8 +12,11 @@ import {
 } from "../controllers/razorpayController";
 import { validateRequest } from "../middlewares/validationMiddleware";
 import { body } from "express-validator";
+import { createServiceLogger } from "../utils/logger";
+import { AuthRequest } from "../types";
 
 const router: Router = Router();
+const logger = createServiceLogger("razorpay-routes");
 
 // Validation middleware
 const paymentValidation = [
@@ -37,7 +40,16 @@ const refundValidation = [
 router.get("/status", getStatus);
 
 // Create Razorpay order for a booking
-router.post("/orders/:bookingId", authMiddleware, createOrder);
+router.post(
+  "/orders/:bookingId",
+  authMiddleware,
+  (req: AuthRequest, res: Response) => {
+    logger.info(
+      `Creating Razorpay order for booking: ${req.params.bookingId}, user: ${req.user?.id}`
+    );
+    createOrder(req, res);
+  }
+);
 
 // Verify Razorpay payment
 router.post(
@@ -45,11 +57,19 @@ router.post(
   authMiddleware,
   paymentValidation,
   validateRequest,
-  verifyPayment
+  (req: AuthRequest, res: Response) => {
+    logger.info(
+      `Verifying Razorpay payment for booking: ${req.params.bookingId}, user: ${req.user?.id}`
+    );
+    verifyPayment(req, res);
+  }
 );
 
 // Webhook doesn't require auth - it's called by Razorpay
-router.post("/webhook", webhook);
+router.post("/webhook", (req: Request, res: Response) => {
+  logger.info("Received Razorpay webhook");
+  webhook(req, res);
+});
 
 // Refund a payment (admin only)
 router.post(
@@ -58,7 +78,12 @@ router.post(
   isAdminMiddleware,
   refundValidation,
   validateRequest,
-  initiateRefund
+  (req: AuthRequest, res: Response) => {
+    logger.info(
+      `Initiating refund for payment: ${req.params.paymentId}, by admin: ${req.user?.id}`
+    );
+    initiateRefund(req, res);
+  }
 );
 
 export default router;

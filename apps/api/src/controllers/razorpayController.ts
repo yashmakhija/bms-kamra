@@ -2,9 +2,11 @@ import { Request, Response } from "express";
 import { AuthRequest } from "../types";
 import * as razorpayService from "../services/razorpayService";
 import { AppError } from "../utils/errors";
-import { getBookingById, processPayment } from "../services/bookingService";
+import { processPayment } from "../services/bookingService";
 import { createServiceLogger } from "../utils/logger";
 import { StatusCodes } from "http-status-codes";
+import { prisma } from "../lib/database";
+import { BookingWithDetails } from "../types";
 
 const logger = createServiceLogger("razorpay-controller");
 
@@ -24,13 +26,30 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Fetch booking details with validation
-    const booking = await getBookingById(bookingId as string, userId);
+    // Directly fetch booking from database to bypass permission checks
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId as string },
+      include: {
+        tickets: {
+          include: {
+            section: true,
+          },
+        },
+      },
+    });
 
     if (!booking) {
       return res.status(StatusCodes.NOT_FOUND).json({
         status: "error",
         message: "Booking not found",
+      });
+    }
+
+    // Verify user owns this booking
+    if (booking.userId !== userId) {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        status: "error",
+        message: "You don't have permission to access this booking",
       });
     }
 
@@ -41,8 +60,30 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
       });
     }
 
+    // Create booking details object for Razorpay service
+    const bookingDetails: BookingWithDetails = {
+      id: booking.id,
+      userId: booking.userId,
+      status: booking.status,
+      totalAmount: Number(booking.totalAmount),
+      currency: booking.currency,
+      expiresAt: booking.expiresAt,
+      paymentMethod: booking.paymentMethod || undefined,
+      paymentId: booking.paymentId || undefined,
+      paymentDate: booking.paymentDate || undefined,
+      createdAt: booking.createdAt,
+      updatedAt: booking.updatedAt,
+      tickets: booking.tickets.map((ticket) => ({
+        id: ticket.id,
+        status: ticket.status,
+        sectionId: ticket.sectionId,
+        price: Number(ticket.price),
+        code: ticket.code,
+      })),
+    };
+
     // Create Razorpay order
-    const result = await razorpayService.createOrder(booking, { notes });
+    const result = await razorpayService.createOrder(bookingDetails, { notes });
 
     return res.status(StatusCodes.OK).json({
       status: "success",
@@ -51,6 +92,8 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     logger.error("Create Razorpay order error:", {
       error: error instanceof Error ? error.message : "Unknown error",
+      bookingId: req.params.bookingId,
+      userId: req.user?.id,
     });
 
     if (error instanceof AppError) {
@@ -94,7 +137,27 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // First verify the signature
+    // First check if the booking exists and belongs to the user
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId as string },
+    });
+
+    if (!booking) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        status: "error",
+        message: "Booking not found",
+      });
+    }
+
+    // Verify user owns this booking
+    if (booking.userId !== userId) {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        status: "error",
+        message: "You don't have permission to access this booking",
+      });
+    }
+
+    // Verify the signature
     const isValid = razorpayService.verifyPaymentSignature({
       razorpayOrderId,
       razorpayPaymentId,
@@ -122,6 +185,8 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     logger.error("Verify Razorpay payment error:", {
       error: error instanceof Error ? error.message : "Unknown error",
+      bookingId: req.params.bookingId,
+      userId: req.user?.id,
     });
 
     if (error instanceof AppError) {

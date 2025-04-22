@@ -8,9 +8,14 @@ import { X } from "lucide-react";
 interface SimpleAuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  className?: string;
 }
 
-export function SimpleAuthModal({ isOpen, onClose }: SimpleAuthModalProps) {
+export function SimpleAuthModal({
+  isOpen,
+  onClose,
+  className,
+}: SimpleAuthModalProps) {
   const [activeTab, setActiveTab] = useState<string>("login");
 
   useEffect(() => {
@@ -42,7 +47,7 @@ export function SimpleAuthModal({ isOpen, onClose }: SimpleAuthModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+    <div className={`fixed inset-0 z-[9999] flex items-center justify-center ${className}`}>
       {/* Backdrop with blur effect */}
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-300"

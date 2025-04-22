@@ -204,28 +204,189 @@ class ApiClient {
   // ----- Razorpay Methods -----
 
   async getRazorpayStatus(): Promise<RazorpayStatusResponse> {
-    const response = await this.client.get<RazorpayStatusResponse>(
-      ENDPOINTS.razorpay.status
-    );
-    return response.data;
+    try {
+      const response = await this.client.get<RazorpayStatusResponse>(
+        ENDPOINTS.razorpay.status
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Failed to get Razorpay status:", error);
+      return {
+        status: "not_configured",
+        keyId: null,
+        webhookConfigured: false,
+        environment: "unknown",
+      };
+    }
   }
 
   async createRazorpayOrder(bookingId: string): Promise<RazorpayOrderResponse> {
-    const response = await this.client.post<RazorpayOrderResponse>(
-      ENDPOINTS.razorpay.createOrder(bookingId)
-    );
-    return response.data;
+    // Validate input
+    if (!bookingId) {
+      throw new Error("Booking ID is required to create Razorpay order");
+    }
+
+    // Initialize retry counter and import MAX_RETRIES from config
+    let retryCount = 0;
+    const MAX_RETRIES = 3; // Match the value in RAZORPAY_CONFIG
+    const RETRY_DELAY = 2000;
+
+    const executeRequest = async (): Promise<RazorpayOrderResponse> => {
+      try {
+        console.log(
+          `Creating Razorpay order for booking: ${bookingId} (Attempt ${retryCount + 1}/${MAX_RETRIES + 1})`
+        );
+
+        // Ensure authentication token exists
+        const token = this.getToken();
+        if (!token) {
+          console.error(
+            "No authentication token available. Please log in again."
+          );
+          throw new Error("Authentication required. Please log in again.");
+        }
+
+        // Make API call
+        const response = await this.client.post<{
+          status: string;
+          message?: string;
+          data?: RazorpayOrderResponse;
+        }>(
+          ENDPOINTS.razorpay.createOrder(bookingId),
+          {},
+          {
+            timeout: 10000, // 10 seconds timeout
+          }
+        );
+
+        // Check if the response is successful and contains data
+        if (
+          response.data.status === "success" &&
+          response.data.data &&
+          response.data.data.orderId
+        ) {
+          return response.data.data;
+        }
+
+        // If we got here, we have a response but it's not what we expected
+        const errorMessage =
+          response.data?.message || "Failed to create Razorpay order";
+        console.error("Razorpay order creation failed:", errorMessage);
+        throw new Error(errorMessage);
+      } catch (error: any) {
+        // Handle axios errors
+        if (error.response) {
+          // The server responded with a status code outside the 2xx range
+          if (
+            (error.response.status === 403 || error.response.status === 401) &&
+            retryCount < MAX_RETRIES
+          ) {
+            console.error(
+              `Authentication error for Razorpay. Attempt ${retryCount + 1}/${MAX_RETRIES}. Trying to restore session...`
+            );
+
+            // Try to refresh auth state if possible
+            try {
+              const authState = await this.verifyAuth();
+              if (!authState.authenticated) {
+                throw new Error(
+                  "Authentication session expired. Please log in again to continue with payment."
+                );
+              }
+
+              // Increment retry counter
+              retryCount++;
+
+              // Wait before retry
+              await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+
+              // Try again
+              return executeRequest();
+            } catch (authError) {
+              console.error("Failed to restore authentication:", authError);
+              throw new Error(
+                "Authentication session expired. Please log in again to continue with payment."
+              );
+            }
+          }
+
+          const errorMessage =
+            error.response.data?.message ||
+            `Error ${error.response.status}: Failed to create Razorpay order`;
+          console.error("Razorpay order creation error:", errorMessage);
+          throw new Error(errorMessage);
+        } else if (error.request) {
+          // The request was made but no response was received
+          console.error("Razorpay order creation error: No response received");
+          throw new Error(
+            "Payment gateway not responding. Please try again later."
+          );
+        } else {
+          // Something happened in setting up the request
+          console.error(
+            "Razorpay order creation error:",
+            error.message || error
+          );
+          throw new Error(error.message || "Failed to create payment order");
+        }
+      }
+    };
+
+    // Start the first attempt
+    return executeRequest();
   }
 
   async verifyRazorpayPayment(
     bookingId: string,
     data: RazorpayVerifyRequest
-  ): Promise<{ success: boolean; booking: Booking }> {
-    const response = await this.client.post<{
-      success: boolean;
-      booking: Booking;
-    }>(ENDPOINTS.razorpay.verifyPayment(bookingId), data);
-    return response.data;
+  ): Promise<{ status: string; message?: string }> {
+    // Validate inputs
+    if (!bookingId) {
+      throw new Error("Booking ID is required to verify payment");
+    }
+
+    if (
+      !data.razorpayPaymentId ||
+      !data.razorpayOrderId ||
+      !data.razorpaySignature
+    ) {
+      throw new Error(
+        "Payment verification requires payment ID, order ID, and signature"
+      );
+    }
+
+    try {
+      const response = await this.client.post<{
+        status: string;
+        message?: string;
+      }>(ENDPOINTS.razorpay.verifyPayment(bookingId), data, {
+        timeout: 15000, // 15 seconds timeout for payment verification
+      });
+
+      return response.data;
+    } catch (error: any) {
+      // Handle axios errors with detailed logging
+      if (error.response) {
+        const errorMessage =
+          error.response.data?.message ||
+          `Payment verification failed with status ${error.response.status}`;
+        console.error("Razorpay payment verification error:", errorMessage);
+        throw new Error(errorMessage);
+      } else if (error.request) {
+        console.error(
+          "Razorpay payment verification error: No response received"
+        );
+        throw new Error(
+          "Payment verification timed out. Please check your booking status."
+        );
+      } else {
+        console.error(
+          "Razorpay payment verification error:",
+          error.message || error
+        );
+        throw new Error(error.message || "Failed to verify payment");
+      }
+    }
   }
 
   // ----- Auth Utilities -----
@@ -588,7 +749,7 @@ class ApiClient {
   }
 
   async updateVenue(id: string, data: UpdateVenueInput): Promise<Venue> {
-    const response = await this.client.put<Venue>(
+    const response = await this.client.post<Venue>(
       ENDPOINTS.venues.update(id),
       data
     );

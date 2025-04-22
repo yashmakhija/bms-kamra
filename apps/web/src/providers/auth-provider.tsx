@@ -7,17 +7,18 @@ interface AuthProviderProps {
 
 /**
  * Auth Provider component
- * Handles refreshing user data on app start
+ * Handles authentication verification on app startup
  */
 export function AuthProvider({ children }: AuthProviderProps) {
-  const { isAuthenticated, refreshUser } = useAuthStore();
+  const { isAuthenticated, verifyAuth, verifyChecked } = useAuthStore();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      refreshUser();
+    // Verify authentication status on component mount
+    if (!verifyChecked) {
+      verifyAuth();
     }
-  }, [isAuthenticated, refreshUser]);
+    
+  }, [verifyAuth, verifyChecked]);
 
   return <>{children}</>;
 }
- 

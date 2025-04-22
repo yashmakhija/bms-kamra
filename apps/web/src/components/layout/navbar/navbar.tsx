@@ -24,7 +24,7 @@ export function Navbar() {
 
   return (
     <>
-      <nav className="h-16 flex items-center px-4 fixed w-full top-0 z-10 bg-[#171717]/80 backdrop-blur-sm">
+      <nav className="h-16 flex items-center px-4 fixed w-full top-0 z-10 bg-[#171717]/80 overflow-hidden backdrop-blur-sm">
         <div className="container mx-auto flex justify-between items-center">
           <div className="md:hidden">
             <Button

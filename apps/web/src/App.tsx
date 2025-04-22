@@ -3,7 +3,13 @@ import { HomePage } from "./pages/home";
 import { Navbar } from "./components/layout/navbar/navbar";
 import { Footer } from "./components/layout/footer";
 import { TicketDetailsPage } from "./pages/ticket-details";
+import { ProfilePage } from "./pages/profile";
+import BookingSuccessPage from "./pages/booking-success";
 import { AuthProvider } from "./providers/auth-provider";
+import { ProtectedRoute } from "./components/auth/protected-route";
+import PaymentProcessingPage from "./pages/payment";
+import PaymentSuccessPage from "./pages/payment/success";
+import PaymentCancelPage from "./pages/payment/cancel";
 
 function App() {
   return (
@@ -11,8 +17,60 @@ function App() {
       <Router>
         <Navbar />
         <Routes>
+          {/* Public routes */}
           <Route path="/" element={<HomePage />} />
-          <Route path="/tickets/:ticketId" element={<TicketDetailsPage />} />
+
+          {/* Protected routes */}
+          <Route path="/shows/:showId" element={<TicketDetailsPage />} />
+
+          <Route
+            path="/booking/:bookingId/success"
+            element={
+              <ProtectedRoute>
+                <BookingSuccessPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Payment routes */}
+          <Route
+            path="/payment/success/:bookingId?"
+            element={
+              <ProtectedRoute>
+                <PaymentSuccessPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/payment/cancel/:bookingId?"
+            element={
+              <ProtectedRoute>
+                <PaymentCancelPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/payment/:bookingId"
+            element={
+              <ProtectedRoute>
+                <PaymentProcessingPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Fallback route */}
+          <Route path="*" element={<div>Page not found</div>} />
         </Routes>
         <Footer />
       </Router>

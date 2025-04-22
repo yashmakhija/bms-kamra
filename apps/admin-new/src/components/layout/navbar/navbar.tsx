@@ -59,6 +59,17 @@ export function Navbar() {
             >
               Dashboard
             </Link>
+
+            <Link
+              to="/shows/new"
+              className={`text-zinc-800 dark:text-white hover:text-zinc-600 dark:hover:text-white/80 ${
+                location.pathname === "/shows/new"
+                  ? "border-b-2 border-purple-500"
+                  : ""
+              }`}
+            >
+              Create Show
+            </Link>
             <Link
               to="/shows"
               className={`text-zinc-800 dark:text-white hover:text-zinc-600 dark:hover:text-white/80 ${
@@ -67,17 +78,7 @@ export function Navbar() {
                   : ""
               }`}
             >
-              Shows
-            </Link>
-            <Link
-              to="/tickets"
-              className={`text-zinc-800 dark:text-white hover:text-zinc-600 dark:hover:text-white/80 ${
-                location.pathname === "/tickets"
-                  ? "border-b-2 border-purple-500"
-                  : ""
-              }`}
-            >
-              Tickets
+              All Shows
             </Link>
           </div>
 
@@ -115,15 +116,15 @@ export function Navbar() {
               Shows
             </Link>
             <Link
-              to="/tickets"
+              to="/create-show"
               className={`block py-2 text-zinc-800 dark:text-white font-medium ${
-                location.pathname === "/tickets"
+                location.pathname === "/create-show"
                   ? "text-purple-600 dark:text-purple-400"
                   : ""
               }`}
               onClick={() => setMobileMenuOpen(false)}
             >
-              Tickets
+              Create Show
             </Link>
           </div>
         </div>

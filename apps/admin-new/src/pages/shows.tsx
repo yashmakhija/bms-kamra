@@ -38,6 +38,7 @@ import {
   Trash,
   AlertTriangle,
   Clock,
+  ArrowRight,
 } from "lucide-react";
 import { Badge } from "@repo/ui/components/ui/badge";
 import { useShowsStore } from "../store/shows";
@@ -313,9 +314,8 @@ export function ShowsPage() {
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
-            <Button onClick={() => handleOpenModal()}>
-              <PlusCircle className="h-4 w-4 mr-2" />
-              Add Show
+            <Button variant="outline" size="icon" onClick={() => window.location.href = "/shows/new"} title="Add Show">
+              <PlusCircle className="h-4 w-4" />
             </Button>
           </div>
         </div>
