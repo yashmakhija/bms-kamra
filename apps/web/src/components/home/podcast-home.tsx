@@ -37,6 +37,9 @@ export function Podcast({ shows, title, className }: LatestUploadsProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { setScrollState } = useScrollStore();
 
+  // Limit shows to only display the first 6
+  const limitedShows = shows.slice(0, 6);
+
   const checkScroll = () => {
     if (!scrollContainerRef.current) return;
 
@@ -84,7 +87,7 @@ export function Podcast({ shows, title, className }: LatestUploadsProps) {
               WebkitOverflowScrolling: "touch",
             }}
           >
-            {shows.map((show) => (
+            {limitedShows.map((show) => (
               <div
                 key={show.id}
                 className="flex-shrink-0 snap-start snap-always"
@@ -107,7 +110,7 @@ export function Podcast({ shows, title, className }: LatestUploadsProps) {
         {/* Desktop View: 3-Column Grid */}
         <div className="hidden xl:block">
           <div className="grid grid-cols-3 gap-19">
-            {shows.map((show) => (
+            {limitedShows.map((show) => (
               <ShowCard
                 key={show.id}
                 title={show.title}
