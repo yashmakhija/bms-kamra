@@ -1,6 +1,8 @@
 import { Brand } from "./brand";
-import { QuickLinks } from "./quick-links";
+import { Legal } from "./legal";
+import { Navigate } from "./navigate";
 import { SocialLinks } from "./social-links";
+import { Support } from "./support";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -15,8 +17,10 @@ export function Footer() {
               <SocialLinks />
             </div>
           </div>
-          <div className="md:pl-12 ">
-            <QuickLinks />
+          <div className="md:pl-12 grid grid-cols-1 md:grid-cols-3 gap-12">
+            <Navigate />
+            <Support />
+            <Legal />
           </div>
         </div>
         <div className="w-full border-t border-neutral-700 my-6"></div>
@@ -31,5 +35,5 @@ export function Footer() {
 }
 
 export * from "./brand";
-export * from "./quick-links";
+export * from "./navigate";
 export * from "./social-links";

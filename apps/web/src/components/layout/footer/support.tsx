@@ -1,14 +1,13 @@
 const links = [
   { href: "/contact", label: "Contact Us" },
-  { href: "/terms", label: "Terms of Service" },
-  { href: "/privacy", label: "Privacy Policy" },
-  { href: "/refunds", label: "Refunds & Cancellation Policy" },
+  { href: "/terms", label: "Help" },
+  { href: "/privacy", label: "FAQ" },
 ] as const;
 
-export function QuickLinks() {
+export function Support() {
   return (
     <div className="space-y-6 ">
-      <h3 className="text-white text-lg font-medium">Quick Links</h3>
+      <h3 className="text-white text-lg font-medium">Support</h3>
       <nav className="space-y-4">
         {links.map(({ href, label }) => (
           <a
