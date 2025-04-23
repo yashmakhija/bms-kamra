@@ -11,7 +11,7 @@ const navLinks = [
   { title: "Home", href: "/" },
   { title: "Tickets", href: "/tickets" },
   { title: "Gallery", href: "/gallery" },
-  { title: "Episodes", href: "/episodes" },
+  { title: "Episodes", href: "/latest-uploads" },
   { title: "Podcasts", href: "/podcasts" },
   { title: "Merch", href: "/merch" },
 ];
@@ -63,12 +63,14 @@ export function Navbar() {
             </button>
 
             {/* Logo - Only visible on large screens */}
-            <Link to="/" className="hidden lg:flex items-center">
-              <img
-                src="/logo.png"
-                alt="The Kunal Kamra Show"
-                className="h-12 w-12"
-              />
+            <Link to="/" className="hidden cursor-pointer lg:flex items-center">
+              <a href="/">
+                <img
+                  src="/logo.png"
+                  alt="The Kunal Kamra Show"
+                  className="h-12 w-12"
+                />
+              </a>
             </Link>
 
             {/* Navigation Links - Only visible on large screens */}

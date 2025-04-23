@@ -239,7 +239,7 @@ export function UpcomingShows({
 
           <div className="sm:hidden md:block">
             <Button className="bg-neutral-50 text-neutral-900 text-sm leading-none font-medium rounded-xl gap-2 overflow-hidden min-w-[110px] h-[40px] px-6 py-4">
-              Browse all
+              <a href="/tickets">Browse all</a>
             </Button>
           </div>
 
