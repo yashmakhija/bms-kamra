@@ -117,12 +117,29 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
  * Verify Razorpay payment
  */
 export const verifyPayment = async (req: AuthRequest, res: Response) => {
-  try {
-    const { bookingId } = req.params;
-    const { razorpayPaymentId, razorpayOrderId, razorpaySignature } = req.body;
-    const userId = req.user?.id;
+  const { bookingId } = req.params;
+  const { razorpayPaymentId, razorpayOrderId, razorpaySignature } = req.body;
+  const userId = req.user?.id;
 
+  // Log the incoming payment verification request
+  logger.info("Payment verification request received", {
+    bookingId,
+    userId,
+    razorpayPaymentId: razorpayPaymentId
+      ? `${razorpayPaymentId.substring(0, 10)}...`
+      : "missing",
+    razorpayOrderId: razorpayOrderId
+      ? `${razorpayOrderId.substring(0, 10)}...`
+      : "missing",
+    hasSignature: !!razorpaySignature,
+    timestamp: new Date().toISOString(),
+    ipAddress: req.ip || "unknown",
+    userAgent: req.headers["user-agent"] || "unknown",
+  });
+
+  try {
     if (!userId) {
+      logger.warn("Payment verification - Unauthorized user", { bookingId });
       return res.status(StatusCodes.UNAUTHORIZED).json({
         status: "error",
         message: "User not authenticated",
@@ -130,6 +147,17 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
     }
 
     if (!razorpayPaymentId || !razorpayOrderId || !razorpaySignature) {
+      logger.warn("Payment verification - Missing required fields", {
+        bookingId,
+        missingFields: [
+          !razorpayPaymentId && "razorpayPaymentId",
+          !razorpayOrderId && "razorpayOrderId",
+          !razorpaySignature && "razorpaySignature",
+        ]
+          .filter(Boolean)
+          .join(", "),
+      });
+
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: "error",
         message:
@@ -143,14 +171,34 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
     });
 
     if (!booking) {
+      logger.warn("Payment verification - Booking not found", {
+        bookingId,
+        userId,
+      });
       return res.status(StatusCodes.NOT_FOUND).json({
         status: "error",
         message: "Booking not found",
       });
     }
 
+    // Log details about the booking being processed
+    logger.info("Payment verification - Booking found", {
+      bookingId,
+      userId,
+      bookingUserId: booking.userId,
+      bookingStatus: booking.status,
+      amount: booking.totalAmount.toString(),
+      currency: booking.currency,
+    });
+
     // Verify user owns this booking
     if (booking.userId !== userId) {
+      logger.warn("Payment verification - Permission denied", {
+        bookingId,
+        requestUserId: userId,
+        bookingUserId: booking.userId,
+      });
+
       return res.status(StatusCodes.FORBIDDEN).json({
         status: "error",
         message: "You don't have permission to access this booking",
@@ -165,11 +213,23 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
     });
 
     if (!isValid) {
+      logger.warn("Payment verification - Invalid signature", {
+        bookingId,
+        userId,
+        razorpayPaymentId: razorpayPaymentId.substring(0, 10) + "...",
+      });
+
       return res.status(StatusCodes.BAD_REQUEST).json({
         status: "error",
         message: "Invalid payment signature",
       });
     }
+
+    logger.info("Payment verification - Signature verified successfully", {
+      bookingId,
+      userId,
+      razorpayPaymentId: razorpayPaymentId.substring(0, 10) + "...",
+    });
 
     // Process payment in booking service
     const result = await processPayment(
@@ -177,6 +237,31 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
       "RAZORPAY",
       razorpayPaymentId
     );
+
+    // Explicitly invalidate any cached booking data to force a fresh fetch
+    try {
+      const { deleteCache } = await import("../utils/redis");
+      await deleteCache(`booking:${bookingId}`);
+      logger.info("Payment verification - Booking cache invalidated", {
+        bookingId,
+        userId,
+      });
+    } catch (cacheError) {
+      logger.warn("Failed to invalidate booking cache", {
+        bookingId,
+        error:
+          cacheError instanceof Error ? cacheError.message : "Unknown error",
+      });
+    }
+
+    // Log successful payment processing
+    logger.info("Payment processed successfully", {
+      bookingId,
+      userId,
+      razorpayPaymentId: razorpayPaymentId.substring(0, 10) + "...",
+      newBookingStatus: result?.booking?.status,
+      timestamp: new Date().toISOString(),
+    });
 
     return res.status(StatusCodes.OK).json({
       status: "success",
@@ -187,6 +272,7 @@ export const verifyPayment = async (req: AuthRequest, res: Response) => {
       error: error instanceof Error ? error.message : "Unknown error",
       bookingId: req.params.bookingId,
       userId: req.user?.id,
+      stack: error instanceof Error ? error.stack : "No stack trace",
     });
 
     if (error instanceof AppError) {

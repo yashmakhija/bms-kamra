@@ -31,9 +31,9 @@ export function ProtectedRoute({
   // Show loading state while checking authentication
   if (isLoading || !verifyChecked) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+      <div className="flex flex-col items-center justify-center bg-neutral-900 min-h-[60vh]">
         <Loader2 className="h-12 w-12 text-red-600 animate-spin mb-4" />
-        <p className="text-lg text-gray-700">Checking authorization...</p>
+        <p className="text-lg text-neutral-50">Checking authorization...</p>
       </div>
     );
   }

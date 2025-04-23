@@ -21,6 +21,9 @@ interface BookingState {
   razorpayOrderId: string | null;
   razorpayKeyId: string | null;
 
+  // Viewed bookings
+  viewedBookings: Record<string, Booking>;
+
   // Methods
   createBooking: (bookingData: CreateBookingRequest) => Promise<Booking | null>;
   getUserBookings: () => Promise<Booking[]>;
@@ -40,6 +43,7 @@ interface BookingState {
     orderId: string,
     signature: string
   ) => Promise<boolean>;
+  isLoading: boolean;
 }
 
 export const useBookingStore = create<BookingState>((set, get) => ({
@@ -58,6 +62,10 @@ export const useBookingStore = create<BookingState>((set, get) => ({
 
   razorpayOrderId: null,
   razorpayKeyId: null,
+
+  viewedBookings: {},
+
+  isLoading: false,
 
   // Methods
   createBooking: async (bookingData) => {
@@ -110,29 +118,39 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     }
   },
 
-  getBookingById: async (id) => {
+  getBookingById: async (id: string) => {
     try {
-      // If we don't have an ID but have a stored one, use that
-      const bookingId = id || localStorage.getItem("current_booking_id");
-
-      if (!bookingId) {
-        console.error("No booking ID provided and none in storage");
-        return null;
+      // Check if the booking is already in our cache
+      const existingBooking = get().viewedBookings[id];
+      if (existingBooking) {
+        set({ currentBooking: existingBooking });
+        return existingBooking;
       }
 
-      console.log("Fetching booking details for ID:", bookingId);
-      const booking = await apiClient.getBookingById(bookingId);
+      // If not in cache, fetch from API
+      set({ isLoading: true, bookingError: null });
+      const booking = await apiClient.getBookingById(id);
 
-      // If this is the current booking being processed, update state
-      const { currentBooking } = get();
-      if (!currentBooking || currentBooking.id === bookingId) {
-        set({ currentBooking: booking });
-      }
+      // Store in cache and set as current booking
+      set((state) => ({
+        currentBooking: booking,
+        viewedBookings: {
+          ...state.viewedBookings,
+          [id]: booking,
+        },
+      }));
 
       return booking;
     } catch (error) {
-      console.error("Error fetching booking:", error);
-      return null;
+      const errorMsg =
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch booking details";
+
+      set({ bookingError: errorMsg });
+      throw error;
+    } finally {
+      set({ isLoading: false });
     }
   },
 

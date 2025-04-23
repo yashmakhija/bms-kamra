@@ -77,12 +77,48 @@ class ApiClient {
   }
 
   async login(data: LoginRequest): Promise<AuthResponse> {
-    const response = await this.client.post<AuthResponse>(
-      ENDPOINTS.auth.login,
-      data
-    );
-    this.handleAuthResponse(response.data);
-    return response.data;
+    try {
+      const response = await this.client.post<AuthResponse>(
+        ENDPOINTS.auth.login,
+        data
+      );
+      this.handleAuthResponse(response.data);
+      return response.data;
+    } catch (error: any) {
+      // Handle axios errors
+      if (error.response) {
+        const status = error.response.status;
+        const errorMessage =
+          error.response.data?.message || `Error ${status}: Login failed`;
+
+        // Format more user-friendly error messages
+        if (status === 401) {
+          console.error("Login failed: Invalid credentials");
+          throw new Error(
+            "Invalid email or password. Please check your credentials and try again."
+          );
+        } else if (status === 404) {
+          console.error("Login failed: User not found");
+          throw new Error(
+            "Account not found. Please check your email or sign up for a new account."
+          );
+        } else if (status === 429) {
+          console.error("Login failed: Too many attempts");
+          throw new Error("Too many login attempts. Please try again later.");
+        } else {
+          console.error("Login error:", errorMessage);
+          throw new Error(errorMessage);
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error("Login error: No response received");
+        throw new Error("Server not responding. Please try again later.");
+      } else {
+        // Something happened in setting up the request
+        console.error("Login error:", error.message || error);
+        throw new Error(error.message || "Failed to log in. Please try again.");
+      }
+    }
   }
 
   async googleLogin(data: GoogleLoginRequest): Promise<AuthResponse> {
@@ -167,27 +203,260 @@ class ApiClient {
   }
 
   async getUserBookings(): Promise<Booking[]> {
-    const response = await this.client.get<Booking[]>(
-      ENDPOINTS.booking.getUserBookings
-    );
-    return response.data;
+    // Ensure authentication token exists
+    const token = this.getToken();
+    if (!token) {
+      console.error("No authentication token available. Please log in again.");
+      throw new Error("Authentication required. Please log in again.");
+    }
+
+    // Initialize retry counter
+    let retryCount = 0;
+    const MAX_RETRIES = 1;
+    const RETRY_DELAY = 1000;
+
+    const executeRequest = async (): Promise<Booking[]> => {
+      try {
+        const response = await this.client.get<Booking[]>(
+          ENDPOINTS.booking.getUserBookings
+        );
+        return response.data;
+      } catch (error: any) {
+        // Handle axios errors
+        if (error.response) {
+          // The server responded with a status code outside the 2xx range
+          if (
+            (error.response.status === 403 || error.response.status === 401) &&
+            retryCount < MAX_RETRIES
+          ) {
+            console.error(
+              `Authentication error fetching user bookings. Attempt ${retryCount + 1}/${MAX_RETRIES}. Trying to restore session...`
+            );
+
+            // Try to refresh auth state if possible
+            try {
+              const authState = await this.verifyAuth();
+              if (!authState.authenticated) {
+                throw new Error(
+                  "Authentication session expired. Please log in again to view your bookings."
+                );
+              }
+
+              // Increment retry counter
+              retryCount++;
+
+              // Wait before retry
+              await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+
+              // Try again
+              return executeRequest();
+            } catch (authError) {
+              console.error("Failed to restore authentication:", authError);
+              throw new Error(
+                "Authentication session expired. Please log in again to view your bookings."
+              );
+            }
+          }
+
+          const errorMessage =
+            error.response.data?.message ||
+            `Error ${error.response.status}: Failed to fetch bookings`;
+          console.error("Booking fetch error:", errorMessage);
+          throw new Error(errorMessage);
+        } else if (error.request) {
+          // The request was made but no response was received
+          console.error("Booking fetch error: No response received");
+          throw new Error("Server not responding. Please try again later.");
+        } else {
+          // Something happened in setting up the request
+          console.error("Booking fetch error:", error.message || error);
+          throw new Error(error.message || "Failed to fetch your bookings");
+        }
+      }
+    };
+
+    // Start the first attempt
+    return executeRequest();
   }
 
   async getBookingById(id: string): Promise<Booking> {
-    const response = await this.client.get<Booking>(
-      ENDPOINTS.booking.getById(id)
-    );
-    return response.data;
+    // Validate bookingId
+    if (!id) {
+      throw new Error("Booking ID is required to fetch booking details");
+    }
+
+    // Ensure authentication token exists
+    const token = this.getToken();
+    if (!token) {
+      console.error("No authentication token available. Please log in again.");
+      throw new Error("Authentication required. Please log in again.");
+    }
+
+    // Initialize retry counter
+    let retryCount = 0;
+    const MAX_RETRIES = 1;
+    const RETRY_DELAY = 1000;
+
+    const executeRequest = async (): Promise<Booking> => {
+      try {
+        const response = await this.client.get<Booking>(
+          ENDPOINTS.booking.getById(id)
+        );
+        return response.data;
+      } catch (error: any) {
+        // Handle axios errors
+        if (error.response) {
+          // The server responded with a status code outside the 2xx range
+          if (
+            (error.response.status === 403 || error.response.status === 401) &&
+            retryCount < MAX_RETRIES
+          ) {
+            console.error(
+              `Authentication error fetching booking. Attempt ${retryCount + 1}/${MAX_RETRIES}. Trying to restore session...`
+            );
+
+            // Try to refresh auth state if possible
+            try {
+              const authState = await this.verifyAuth();
+              if (!authState.authenticated) {
+                throw new Error(
+                  "Authentication session expired. Please log in again to view this booking."
+                );
+              }
+
+              // Increment retry counter
+              retryCount++;
+
+              // Wait before retry
+              await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+
+              // Try again
+              return executeRequest();
+            } catch (authError) {
+              console.error("Failed to restore authentication:", authError);
+              throw new Error(
+                "Authentication session expired. Please log in again to view this booking."
+              );
+            }
+          }
+
+          const errorMessage =
+            error.response.data?.message ||
+            `Error ${error.response.status}: Failed to get booking details`;
+          console.error("Booking fetch error:", errorMessage);
+          throw new Error(errorMessage);
+        } else if (error.request) {
+          // The request was made but no response was received
+          console.error("Booking fetch error: No response received");
+          throw new Error("Server not responding. Please try again later.");
+        } else {
+          // Something happened in setting up the request
+          console.error("Booking fetch error:", error.message || error);
+          throw new Error(error.message || "Failed to fetch booking details");
+        }
+      }
+    };
+
+    // Start the first attempt
+    return executeRequest();
   }
 
   async cancelBooking(
     id: string
   ): Promise<{ success: boolean; booking: Booking }> {
-    const response = await this.client.post<{
+    // Validate bookingId
+    if (!id) {
+      throw new Error("Booking ID is required to cancel a booking");
+    }
+
+    // Ensure authentication token exists
+    const token = this.getToken();
+    if (!token) {
+      console.error("No authentication token available. Please log in again.");
+      throw new Error("Authentication required. Please log in again.");
+    }
+
+    // Initialize retry counter
+    let retryCount = 0;
+    const MAX_RETRIES = 1;
+    const RETRY_DELAY = 1000;
+
+    const executeRequest = async (): Promise<{
       success: boolean;
       booking: Booking;
-    }>(ENDPOINTS.booking.cancel(id));
-    return response.data;
+    }> => {
+      try {
+        const response = await this.client.post<{
+          success: boolean;
+          booking: Booking;
+        }>(ENDPOINTS.booking.cancel(id));
+        return response.data;
+      } catch (error: any) {
+        // Handle axios errors
+        if (error.response) {
+          // Check for permission or auth errors
+          if (
+            (error.response.status === 403 || error.response.status === 401) &&
+            retryCount < MAX_RETRIES
+          ) {
+            console.error(
+              `Authentication error canceling booking. Attempt ${retryCount + 1}/${MAX_RETRIES}. Trying to restore session...`
+            );
+
+            // Try to refresh auth state if possible
+            try {
+              const authState = await this.verifyAuth();
+              if (!authState.authenticated) {
+                throw new Error(
+                  "Authentication session expired. Please log in again to cancel this booking."
+                );
+              }
+
+              // Increment retry counter
+              retryCount++;
+
+              // Wait before retry
+              await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
+
+              // Try again
+              return executeRequest();
+            } catch (authError) {
+              console.error("Failed to restore authentication:", authError);
+              throw new Error(
+                "Authentication session expired. Please log in again to cancel this booking."
+              );
+            }
+          }
+
+          // Handle permission error specifically
+          if (
+            error.response.status === 403 &&
+            error.response.data?.message?.includes("permission")
+          ) {
+            throw new Error(
+              "You don't have permission to cancel this booking. Only the booking owner can cancel."
+            );
+          }
+
+          const errorMessage =
+            error.response.data?.message ||
+            `Error ${error.response.status}: Failed to cancel booking`;
+          console.error("Booking cancellation error:", errorMessage);
+          throw new Error(errorMessage);
+        } else if (error.request) {
+          // The request was made but no response was received
+          console.error("Booking cancellation error: No response received");
+          throw new Error("Server not responding. Please try again later.");
+        } else {
+          // Something happened in setting up the request
+          console.error("Booking cancellation error:", error.message || error);
+          throw new Error(error.message || "Failed to cancel booking");
+        }
+      }
+    };
+
+    // Start the first attempt
+    return executeRequest();
   }
 
   async processPayment(

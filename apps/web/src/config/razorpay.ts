@@ -12,7 +12,17 @@ export const RAZORPAY_CONFIG = {
   THEME_COLOR: "#000",
 
   // Merchant details
-  MERCHANT_NAME: "Ticket Booking System",
+  MERCHANT_NAME: "Kunal Kamra App",
+  MERCHANT_EMAIL: "kunal@kunalkamra.in",
+  MERCHANT_PHONE: "+919826000000",
+  MERCHANT_ADDRESS: "123, Main St, Anytown, India",
+  MERCHANT_WEBSITE: "https://kunalkamra.in",
+  MERCHANT_LOGO: "/logo.png",
+  MERCHANT_DESCRIPTION: "Kunal Kamra App",
+  MERCHANT_TERMS_AND_CONDITIONS: "https://kunalkamra.in/terms-and-conditions",
+  MERCHANT_PRIVACY_POLICY: "https://kunalkamra.in/privacy-policy",
+  MERCHANT_REFUND_POLICY: "https://kunalkamra.in/refund-policy",
+  
 
   // Script
   SCRIPT_URL: "https://checkout.razorpay.com/v1/checkout.js",

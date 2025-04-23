@@ -274,19 +274,47 @@ export const getUserBookings = async (userId: string) => {
 export const getBookingById = async (id: string, userId?: string) => {
   const cacheKey = `booking:${id}`;
 
+  // Log the incoming request details
+  logger.info("getBookingById called", {
+    bookingId: id,
+    userId: userId || "none (admin access)",
+    checkingPermissions: !!userId,
+    timestamp: new Date().toISOString(),
+  });
+
   try {
     // Try to get from cache first
     const cachedBooking = await getCache<any>(cacheKey);
     if (cachedBooking) {
+      logger.info("getBookingById cache hit", { bookingId: id });
+
       // If userId is provided, check if the booking belongs to the user
       if (userId && cachedBooking.userId !== userId) {
+        logger.warn("getBookingById permission denied (cached)", {
+          bookingId: id,
+          requestUserId: userId,
+          bookingUserId: cachedBooking.userId,
+          bookingStatus: cachedBooking.status || "unknown",
+        });
+
         throw new AppError(
           "You don't have permission to view this booking",
           StatusCodes.FORBIDDEN
         );
       }
+
+      logger.info("getBookingById returning cached booking", {
+        bookingId: id,
+        userPermissionCheck: userId ? "passed" : "skipped (admin)",
+      });
+
       return cachedBooking;
     }
+
+    // Log cache miss
+    logger.info("getBookingById cache miss, fetching from DB", {
+      bookingId: id,
+    });
 
     // Get booking from database
     const booking = await prisma.booking.findUnique({
@@ -324,12 +352,29 @@ export const getBookingById = async (id: string, userId?: string) => {
       },
     });
 
+    // Log DB query result
     if (!booking) {
+      logger.warn("getBookingById booking not found in DB", { bookingId: id });
       throw new AppError("Booking not found", StatusCodes.NOT_FOUND);
     }
 
+    logger.info("getBookingById DB fetch successful", {
+      bookingId: id,
+      bookingStatus: booking.status,
+      bookingUserId: booking.userId,
+      requestUserId: userId || "none (admin access)",
+      ticketsCount: booking.tickets.length,
+    });
+
     // If userId is provided, check if the booking belongs to the user
     if (userId && booking.userId !== userId) {
+      logger.warn("getBookingById permission denied (DB)", {
+        bookingId: id,
+        requestUserId: userId,
+        bookingUserId: booking.userId,
+        bookingStatus: booking.status,
+      });
+
       throw new AppError(
         "You don't have permission to view this booking",
         StatusCodes.FORBIDDEN
@@ -341,15 +386,45 @@ export const getBookingById = async (id: string, userId?: string) => {
       ? formatBooking(booking)
       : formatBookingForAdmin(booking);
 
+    // Log the formatted booking userId information
+    if (formattedBooking) {
+      logger.info("getBookingById booking formatted with userId check", {
+        bookingId: id,
+        originalUserId: booking.userId,
+        formattedUserId: formattedBooking.userId,
+        matches: formattedBooking.userId === booking.userId,
+      });
+    }
+
+    // Log the success path
+    logger.info("getBookingById booking formatted", {
+      bookingId: id,
+      formatter: userId ? "user" : "admin",
+      userPermissionCheck: userId ? "passed" : "skipped (admin)",
+    });
+
     // Cache the formatted booking
     if (booking) {
       // Cache the result (short TTL for bookings)
       await setCache(cacheKey, formattedBooking, 300); // 5 minutes
+      logger.info("getBookingById booking cached", { bookingId: id });
     }
 
     return formattedBooking;
   } catch (error) {
-    logger.error("Error getting booking by ID", { error, bookingId: id });
+    // Enhanced error logging with more context
+    logger.error("Error getting booking by ID", {
+      error,
+      bookingId: id,
+      errorMessage: error instanceof Error ? error.message : "Unknown error",
+      errorType:
+        error instanceof AppError
+          ? "AppError"
+          : error && typeof error === "object"
+            ? (error as any).constructor?.name
+            : "Unknown",
+      userId: userId || "none (admin access)",
+    });
 
     if (error instanceof AppError) {
       throw error;

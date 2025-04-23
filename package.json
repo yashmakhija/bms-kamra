@@ -20,6 +20,8 @@
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
     "framer-motion": "^12.7.3",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.1",
     "react-hook-form": "^7.55.0",
     "zod": "^3.22.4"
   }

@@ -8,6 +8,7 @@ export function formatBooking(booking: any) {
 
   return {
     id: booking.id,
+    userId: booking.userId,
     status: booking.paymentStatus || booking.status,
     totalAmount: parseFloat(booking.totalAmount.toString()),
     currency: booking.currency,

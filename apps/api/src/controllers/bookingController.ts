@@ -71,26 +71,76 @@ export const getUserBookings = async (req: AuthRequest, res: Response) => {
  * Get booking by ID
  */
 export const getBookingById = async (req: AuthRequest, res: Response) => {
-  try {
-    const { bookingId } = req.params;
-    const userId = req.user?.id;
+  const { bookingId } = req.params;
+  const userId = req.user?.id;
+  const isAdmin = req.isAdmin;
 
+  // Start with detailed request logging
+  console.log(`[DEBUG] getBookingById - Request received`, {
+    bookingId,
+    userId,
+    isAdmin,
+    tokenExists: !!req.headers.authorization,
+    userAgent: req.headers["user-agent"],
+    referer: req.headers.referer || "none",
+    timestamp: new Date().toISOString(),
+  });
+
+  try {
     if (!userId) {
+      console.log(
+        `[DEBUG] getBookingById - Auth failure: No user ID in request`
+      );
       return res.status(401).json({ message: "User not authenticated" });
     }
+
+    // Log the exact params being passed to the service
+    console.log(`[DEBUG] getBookingById - Calling service`, {
+      bookingId: bookingId,
+      passingUserId: isAdmin ? "undefined (admin access)" : userId,
+      callerIsAdmin: isAdmin,
+    });
 
     const booking = await bookingService.getBookingById(
       bookingId as string,
       req.isAdmin ? undefined : userId
     );
 
+    // Log successful retrieval
+    console.log(`[DEBUG] getBookingById - Booking retrieved successfully`, {
+      bookingId,
+      bookingUserId: booking.userId,
+      requestUserId: userId,
+      matches: booking.userId === userId || isAdmin,
+      status: booking.status,
+    });
+
     if (!booking) {
+      console.log(`[DEBUG] getBookingById - Booking not found`, { bookingId });
       return res.status(404).json({ message: "Booking not found" });
     }
 
+    // Log successful response
+    console.log(`[DEBUG] getBookingById - Success response sent`, {
+      bookingId,
+      userId,
+    });
     return res.status(200).json(booking);
   } catch (error) {
-    console.error("Get booking by ID error:", error);
+    // Enhanced error logging
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    const errorCode = error instanceof AppError ? error.statusCode : 500;
+
+    console.error(`[DEBUG] getBookingById - Error`, {
+      bookingId,
+      userId,
+      error: errorMessage,
+      stack: error instanceof Error ? error.stack : "No stack trace",
+      statusCode: errorCode,
+      type: error instanceof AppError ? "AppError" : "Unknown",
+    });
+
     if (error instanceof AppError) {
       return res.status(error.statusCode).json({ message: error.message });
     }

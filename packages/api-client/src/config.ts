@@ -33,7 +33,7 @@ function getApiBaseUrl(): string {
   }
 
   // Default fallback
-  return "https://kunal-api.classicoder.com/api";
+  return "http://localhost:3091/api";
 }
 
 /**

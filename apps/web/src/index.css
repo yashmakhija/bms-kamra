@@ -1,1 +1,47 @@
 @import "tailwindcss";
+
+/* Add PDF export mode styles to fix color compatibility issues */
+.pdf-export-mode {
+  --background: #0f0f0f !important;
+  --foreground: #ffffff !important;
+  --card: #1e1e1e !important;
+  --card-foreground: #ffffff !important;
+  --popover: #171717 !important;
+  --popover-foreground: #ffffff !important;
+  --primary: #aee301 !important;
+  --primary-foreground: #000000 !important;
+  --secondary: #333333 !important;
+  --secondary-foreground: #ffffff !important;
+  --muted: #444444 !important;
+  --muted-foreground: #999999 !important;
+  --accent: #333333 !important;
+  --accent-foreground: #ffffff !important;
+  --destructive: #e31001 !important;
+  --destructive-foreground: #ffffff !important;
+  --border: #333333 !important;
+  --input: #333333 !important;
+  --ring: #aee301 !important;
+  --radius: 0.5rem !important;
+}
+
+/* Apply standard colors to specific elements in PDF export mode */
+.pdf-export-mode * {
+  color-scheme: dark !important;
+  color: #ffffff !important;
+  background-color: transparent !important;
+}
+
+.pdf-export-mode .bg-neutral-900,
+.pdf-export-mode [class*="bg-neutral"] {
+  background-color: #1e1e1e !important;
+}
+
+.pdf-export-mode [class*="text-[#AEE301]"],
+.pdf-export-mode [class*="text-primary"] {
+  color: #aee301 !important;
+}
+
+.pdf-export-mode [class*="text-neutral-400"],
+.pdf-export-mode [class*="text-gray-400"] {
+  color: #999999 !important;
+}

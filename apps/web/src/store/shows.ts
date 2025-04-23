@@ -34,6 +34,7 @@ interface ShowsState {
   selectShow: (id: string) => void;
   setLoading: (loading: boolean) => void;
   getTicketIdFromShowId: (showId: string) => string;
+  getShowById: (id: string) => Promise<Show>;
 }
 
 // Map API show to UI show format
@@ -121,5 +122,38 @@ export const useShowsStore = create<ShowsState>((set, get) => ({
     const { apiShows } = get();
     const showToTicketMap = createShowToTicketMap(apiShows);
     return showToTicketMap[showId] || ticketData.id;
+  },
+
+  getShowById: async (id: string) => {
+    try {
+      set({ isLoading: true, isError: false, errorMessage: null });
+      const showData = await apiClient.getShowById(id);
+
+      // Update the store with the fetched show if it doesn't already exist
+      set((state) => {
+        const existingShowIndex = state.shows.findIndex((s) => s.id === id);
+        if (existingShowIndex === -1) {
+          return { shows: [...state.shows, showData] };
+        }
+        // If show already exists, update it
+        const updatedShows = [...state.shows];
+        updatedShows[existingShowIndex] = showData;
+        return { shows: updatedShows };
+      });
+
+      return showData;
+    } catch (error) {
+      console.error("Error fetching show by ID:", error);
+      set({
+        isError: true,
+        errorMessage:
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch show details",
+      });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
   },
 }));

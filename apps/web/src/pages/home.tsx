@@ -8,13 +8,13 @@ import { podcastShows } from "../data/podcast";
 import { RecentArticles } from "../components/home/recentArticles";
 export function HomePage() {
   return (
-    <>
+    <div className="bg-gradient-to-b from-[#171717] to-[#510000]">
       <Hero />
       <AboutMe />
-      <UpcomingShows title="Upcoming Shows" />
+      <UpcomingShows removeButton={false} title="Upcoming Shows" />
       <Podcast shows={podcastShows} title="Podcasts" />
       <LatestUploads shows={latestShows} />
       <RecentArticles />
-    </>
+    </div>
   );
 }

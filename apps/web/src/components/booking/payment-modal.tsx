@@ -152,6 +152,10 @@ export function PaymentModal({
           theme: {
             color: RAZORPAY_CONFIG.THEME_COLOR,
           },
+          image: RAZORPAY_CONFIG.MERCHANT_LOGO,
+          notes: {
+            booking_id: actualBookingId,
+          },
           handler: function (response: any) {
             console.log(
               "Razorpay payment successful, verifying:",

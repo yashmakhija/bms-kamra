@@ -133,6 +133,9 @@ interface UpcomingShowsProps {
   className?: string;
   title?: string;
   limit?: number;
+  removeButton?: boolean;
+  excludeShowId?: string;
+  removeArrow?: boolean;
 }
 
 export function UpcomingShows({
@@ -140,6 +143,9 @@ export function UpcomingShows({
   className,
   title,
   limit = 6,
+  removeButton = false,
+  excludeShowId,
+  removeArrow = false,
 }: UpcomingShowsProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -160,8 +166,13 @@ export function UpcomingShows({
   // Use API shows if no props were passed
   const shows = propShows || storeShows;
 
+  // Filter out excluded show and apply limit
+  const filteredShows = excludeShowId
+    ? shows.filter((show) => show.id !== excludeShowId)
+    : shows;
+
   // Apply limit to shows
-  const limitedShows = limit ? shows.slice(0, limit) : shows;
+  const limitedShows = limit ? filteredShows.slice(0, limit) : filteredShows;
 
   // Fetch shows from API on component mount
   useEffect(() => {
@@ -244,16 +255,29 @@ export function UpcomingShows({
             {title}
           </div>
 
-          <div className="sm:hidden md:block">
-            <Button className="bg-neutral-50 text-neutral-900 text-sm leading-none font-medium rounded-xl gap-2 overflow-hidden min-w-[110px] h-[40px] px-6 py-4">
-              <a href="/tickets">Browse all</a>
-            </Button>
-          </div>
+          {/* Only show browse all button when removeButton is false */}
+          {!removeButton && (
+            <div className="hidden md:block">
+              <Button className="bg-neutral-50 text-neutral-900 text-sm leading-none font-medium rounded-xl gap-2 overflow-hidden min-w-[110px] h-[40px] px-6 py-4">
+                <a href="/tickets">Browse all</a>
+              </Button>
+            </div>
+          )}
 
           <div className="md:hidden">
-            <Button className="bg-neutral-50 text-neutral-900 rounded-xl w-12 h-12 p-0 flex items-center justify-center">
-              <ArrowRight size={20} />
-            </Button>
+            {removeButton ? (
+              removeArrow ? null : (
+                <Button className=" bg-neutral-50 text-neutral-900 rounded-xl w-12 h-12 p-0 flex items-center justify-center">
+                  <ArrowRight size={20} />
+                </Button>
+              )
+            ) : (
+              <Button className=" bg-neutral-50 text-neutral-900 rounded-xl w-12 h-12 p-0 flex items-center justify-center">
+                <a href="/tickets">
+                  <ArrowRight size={20} />
+                </a>
+              </Button>
+            )}
           </div>
         </div>
 

@@ -13,8 +13,10 @@ import PaymentCancelPage from "./pages/payment/cancel";
 import Tickets from "./pages/tickets";
 import Podcasts from "./pages/podcasts";
 import LatestUploads from "./pages/latest-uploads";
+import TicketViewPage from "./pages/ticket/view";
 import { ErrorPage } from "./components/errorPage";
 import ComingSoon from "./components/comingSoon";
+import { BookingsPage } from "./pages/bookings";
 function App() {
   return (
     <AuthProvider>
@@ -36,7 +38,6 @@ function App() {
             }
           />
 
-          <Route path="/bookings" element={<ComingSoon />} />
           <Route path="/settings" element={<ComingSoon />} />
 
           <Route
@@ -44,6 +45,16 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Ticket routes */}
+          <Route
+            path="/ticket/view/:bookingId"
+            element={
+              <ProtectedRoute>
+                <TicketViewPage />
               </ProtectedRoute>
             }
           />
@@ -78,6 +89,14 @@ function App() {
           <Route path="/tickets" element={<Tickets />} />
           <Route path="/podcasts" element={<Podcasts />} />
           <Route path="/latest-uploads" element={<LatestUploads />} />
+          <Route
+            path="/bookings"
+            element={
+              <ProtectedRoute>
+                <BookingsPage />
+              </ProtectedRoute>
+            }
+          />
           {/* Fallback route */}
           <Route path="*" element={<ErrorPage />} />
         </Routes>
