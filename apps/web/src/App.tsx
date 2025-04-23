@@ -12,6 +12,7 @@ import PaymentSuccessPage from "./pages/payment/success";
 import PaymentCancelPage from "./pages/payment/cancel";
 import Tickets from "./pages/tickets";
 import Podcasts from "./pages/podcasts";
+import LatestUploads from "./pages/latest-uploads";
 function App() {
   return (
     <AuthProvider>
@@ -71,6 +72,7 @@ function App() {
           />
           <Route path="/tickets" element={<Tickets />} />
           <Route path="/podcasts" element={<Podcasts />} />
+          <Route path="/latest-uploads" element={<LatestUploads />} />
           {/* Fallback route */}
           <Route path="*" element={<div>Page not found</div>} />
         </Routes>

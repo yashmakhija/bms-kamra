@@ -33,6 +33,7 @@ interface LatestUploadsProps {
 }
 
 export function LatestUploads({ shows, className }: LatestUploadsProps) {
+  const limitedShows = shows.slice(0, 6);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const { setScrollState } = useScrollStore();
 
@@ -83,7 +84,7 @@ export function LatestUploads({ shows, className }: LatestUploadsProps) {
               WebkitOverflowScrolling: "touch",
             }}
           >
-            {shows.map((show) => (
+            {limitedShows.map((show) => (
               <div
                 key={show.id}
                 className="flex-shrink-0 snap-start snap-always"
@@ -105,7 +106,7 @@ export function LatestUploads({ shows, className }: LatestUploadsProps) {
 
         <div className="hidden xl:block">
           <div className="grid grid-cols-3 gap-19">
-            {shows.map((show) => (
+            {limitedShows.map((show) => (
               <ShowCard
                 key={show.id}
                 title={show.title}
