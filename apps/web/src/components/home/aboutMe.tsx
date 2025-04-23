@@ -83,7 +83,7 @@ export function AboutMe({}: AboutMeProps) {
         {/* Title with lines for all screen sizes - wider lines on larger screens */}
         <div className="flex items-center justify-center mb-12 md:mb-10">
           <div className="w-1/4 md:w-1/6 h-px bg-white"></div>
-          <h2 className="text-4xl font-bold text-white mx-4 md:mx-6 leading-10">
+          <h2 className="text-2xl sm:text-4xl font-bold text-white mx-4 md:mx-6 leading-10">
             About Kunal
           </h2>
           <div className="w-1/4 md:w-1/6 h-px bg-white"></div>

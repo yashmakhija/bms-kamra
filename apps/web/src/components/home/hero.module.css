@@ -26,3 +26,13 @@
   animation: fadeIn 0.8s ease-out 0.2s forwards;
   opacity: 0;
 }
+
+.outlineText {
+  -webkit-text-stroke: 1px white;
+}
+
+@media (min-width: 640px) {
+  .outlineText {
+    -webkit-text-stroke: 1.5px white;
+  }
+}
