@@ -108,7 +108,7 @@ const transformShowToTicket = (show: ApiShow): Ticket => {
     description: formattedDescription,
     ageLimit: show.ageLimit ? `${show.ageLimit}+` : "All ages",
     language: show.language || "English & Hindi",
-    thumbnailUrl: show.thumbnailUrl || "/kunal-ticket.png", // Default image if none available
+    thumbnailUrl: show.imageUrl || "/kunal-ticket.png", // Default image if none available
     duration: `${show.duration} mins`,
     price: {
       currency: "₹",

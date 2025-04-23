@@ -17,6 +17,8 @@ import {
   CalendarDays,
   Clock3,
   Armchair,
+  Info,
+  Timer,
 } from "lucide-react";
 import { LatestUploads } from "../home/latestupload";
 import { latestShows } from "../../data/upload";
@@ -29,10 +31,10 @@ import {
   SelectValue,
 } from "@repo/ui/components/ui/select";
 import { Button } from "@repo/ui/components/ui/button";
-import { Badge } from "@repo/ui/components/ui/badge";
 import { cn } from "@repo/ui/utils";
 import { SimpleAuthModal } from "../auth/simple-auth-modal";
 import { PaymentModal } from "../booking/payment-modal";
+import { UpcomingShows } from "../home/upcoming-shows";
 
 export function TicketDetails() {
   const { showId } = useParams<{ showId: string }>();
@@ -270,7 +272,7 @@ export function TicketDetails() {
   // Error state
   if (hasError || !ticket) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen px-4 bg-[#0f0f0f]">
+      <div className="flex flex-col items-center justify-center min-h-screen px-10 bg-[#0f0f0f]">
         <AlertCircle className="w-16 h-16 text-red-600 mb-4" />
         <h2 className="text-2xl font-bold text-red-600">Ticket not found</h2>
         <p className="mt-2 text-center text-gray-400 max-w-md">
@@ -290,7 +292,7 @@ export function TicketDetails() {
   }
 
   return (
-    <div className="bg-[#0f0f0f] pt-24 min-h-screen text-white">
+    <div className="bg-neutral-900 pt-24 px-4 md:px-10 py-12 min-h-screen text-white">
       {/* Auth modal - placed at the top level of the component */}
       <SimpleAuthModal
         className="text-black"
@@ -307,7 +309,7 @@ export function TicketDetails() {
         />
       )}
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto  xl:px-30">
         <Button
           variant="ghost"
           className="mb-6 text-white hover:bg-white/10"
@@ -317,7 +319,8 @@ export function TicketDetails() {
           Back
         </Button>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Desktop layout - 3 columns */}
+        <div className="hidden lg:grid lg:grid-cols-3 lg:gap-8">
           <div className="lg:col-span-2">
             <div className="overflow-hidden rounded-2xl shadow-xl">
               <img
@@ -326,115 +329,80 @@ export function TicketDetails() {
                 className="w-full object-cover h-auto hover:scale-105 transition-transform duration-500"
               />
             </div>
-
-            <div className="flex flex-wrap items-center gap-3 mt-6">
-              {ticket.language && (
-                <Badge className="bg-red-600 hover:bg-red-700 text-white px-3 py-1">
-                  {ticket.language}
-                </Badge>
-              )}
-              {ticket.ageLimit && (
-                <Badge className="bg-neutral-800 hover:bg-neutral-700 text-white px-3 py-1">
-                  {ticket.ageLimit}
-                </Badge>
-              )}
-              <Badge className="bg-neutral-800 hover:bg-neutral-700 text-white px-3 py-1">
-                {ticket.duration}
-              </Badge>
-            </div>
-
-            <h1 className="text-3xl md:text-4xl text-neutral-100 font-semibold mt-4 mb-2 leading-tight">
-              {ticket.title}
+            <h1 className="text-xl text-neutral-100 font-semibold mt-4 mb-2 leading-tight">
+              Description
             </h1>
             {ticket.subtitle && (
               <h2 className="text-xl text-neutral-400 mb-6">
                 {ticket.subtitle}
               </h2>
             )}
-
-            <div className="mb-8 text-lg leading-relaxed space-y-4">
+            <div className="mb-8 text-base leading-snug space-y-4">
               {ticket.description.map((paragraph, index) => (
                 <p key={index} className="text-gray-300">
                   {paragraph}
                 </p>
               ))}
             </div>
+            <div className="self-stretch h-0 outline outline-offset-[-0.50px] outline-neutral-700"></div>
 
-            <div className="mt-8 border border-neutral-800 rounded-xl p-6 bg-neutral-900/50 backdrop-blur-sm">
-              <h3 className="text-xl font-medium mb-4 text-white/90">
-                Show Information
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="flex items-start gap-4">
-                  <div className="bg-neutral-800 p-2 rounded-lg">
-                    <Calendar size={20} color="#ff3b30" />
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">Date</p>
-                    <p className="text-white text-lg mt-1">{ticket.date}</p>
-                  </div>
+            <div className="flex flex-wrap items-center gap-15 mt-16">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-neutral-800 rounded-2xl inline-flex justify-start items-center gap-2.5 overflow-hidden ">
+                  <Clock size={20} color="#AEE301" />
                 </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="bg-neutral-800 p-2 rounded-lg">
-                    <Clock size={20} color="#ff3b30" />
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">Duration</p>
-                    <p className="text-white text-lg mt-1">{ticket.duration}</p>
-                  </div>
+                <div>
+                  <p className="text-gray-400 text-sm">Duration</p>
+                  <p className="text-white text-lg mt-1">{ticket.duration}</p>
                 </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="bg-neutral-800 p-2 rounded-lg">
-                    <Clock size={20} color="#ff3b30" />
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">Time</p>
-                    <p className="text-white text-lg mt-1">{showtimeString}</p>
-                  </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-neutral-800 rounded-2xl inline-flex justify-start items-center gap-2.5 overflow-hidden ">
+                  <Info size={20} color="#AEE301" />
                 </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="bg-neutral-800 p-2 rounded-lg">
-                    <MapPin size={20} color="#ff3b30" />
-                  </div>
-                  <div>
-                    <p className="text-gray-400 text-sm">Venue</p>
-                    <p className="text-white text-lg mt-1">{ticket.venue}</p>
-                    <p className="text-gray-500 text-sm mt-1">
-                      {ticket.location}
-                    </p>
-                  </div>
+                <div>
+                  <p className="text-gray-400 text-sm">Min. Age</p>
+                  <p className="text-white text-lg mt-1">{ticket.ageLimit}</p>
+                </div>
+              </div>
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-neutral-800 rounded-2xl inline-flex justify-start items-center gap-2.5 overflow-hidden ">
+                  <Calendar size={20} color="#AEE301" />
+                </div>
+                <div>
+                  <p className="text-gray-400 text-sm">Date</p>
+                  <p className="text-white text-lg mt-1">{ticket.date}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-gradient-to-b from-[#1e1e1e] to-[#171717] rounded-3xl p-6 lg:sticky lg:top-32 self-start shadow-xl border border-neutral-800/50">
+          {/* Desktop Booking Panel */}
+          <div className="bg-neutral-800 h-auto rounded-3xl p-6  lg:top-32 self-start shadow-xl border border-neutral-800/50">
             <div className="space-y-6">
-              <h3 className="text-xl font-semibold mb-4 flex items-center">
-                <TicketIcon className="w-5 h-5 mr-2 text-red-500" />
-                Book Tickets
-              </h3>
+              <h1 className="text-xl font-semibold text-neutral-100 leading-7">
+                {ticket.title}
+              </h1>
 
-              <div className="space-y-4">
+              <div className="space-y-4 mt-6">
                 {/* Event Selection - only show if multiple events */}
-                {ticket.events && ticket.events.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <div className="text-[#AEE301]">
+                    <Calendar size={24} strokeWidth={1.5} />
+                  </div>
                   <div>
-                    <label className="text-sm text-gray-400 mb-1 block">
-                      Select Date
-                    </label>
+                    <p className="text-neutral-400 text-xs font-normal leading-none">
+                      Date
+                    </p>
                     <Select
                       value={selectedEventId}
                       onValueChange={handleEventChange}
                     >
-                      <SelectTrigger className="w-full bg-neutral-800 border-neutral-700 text-white hover:bg-neutral-700 hover:border-neutral-600 transition-colors h-12">
+                      <SelectTrigger className="w-full bg-transparent border-0 p-0 text-white hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none h-auto">
                         <SelectValue placeholder="Select date">
-                          <div className="flex items-center">
-                            <CalendarDays className="w-4 h-4 mr-2 text-red-500 flex-shrink-0" />
-                            {selectedEventId && ticket.events ? (
-                              <span className="text-white">
+                          <div className="flex items-center ">
+                            {selectedEventId && ticket?.events ? (
+                              <span className="text-base leading-snug font-normal text-white">
                                 {formatDate(
                                   ticket.events
                                     .find((e) => e.id === selectedEventId)
@@ -459,7 +427,7 @@ export function TicketDetails() {
                           </h4>
                         </div>
                         <div className="py-1">
-                          {ticket.events.map((event) => (
+                          {ticket?.events?.map((event) => (
                             <SelectItem
                               key={event.id}
                               value={event.id}
@@ -482,24 +450,26 @@ export function TicketDetails() {
                       </SelectContent>
                     </Select>
                   </div>
-                )}
+                </div>
 
                 {/* Showtime Selection - only show if showtimes available */}
-                {availableShowtimes && availableShowtimes.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <div className="text-[#AEE301]">
+                    <Clock size={24} strokeWidth={1.5} />
+                  </div>
                   <div>
-                    <label className="text-sm text-gray-400 mb-1 block">
-                      Select Time
-                    </label>
+                    <p className="text-neutral-400 text-xs font-normal leading-none">
+                      Time
+                    </p>
                     <Select
                       value={selectedShowtimeId}
                       onValueChange={handleShowtimeChange}
                     >
-                      <SelectTrigger className="w-full bg-neutral-800 border-neutral-700 text-white hover:bg-neutral-700 hover:border-neutral-600 transition-colors h-12">
+                      <SelectTrigger className="w-full bg-transparent border-0 p-0 text-white hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none h-auto">
                         <SelectValue placeholder="Select time">
                           <div className="flex items-center">
-                            <Clock3 className="w-4 h-4 mr-2 text-red-500 flex-shrink-0" />
                             {selectedShowtimeId && availableShowtimes ? (
-                              <span className="text-white">
+                              <span className="text-base leading-snug font-normal text-white">
                                 {formatTime(
                                   availableShowtimes.find(
                                     (st) => st.id === selectedShowtimeId
@@ -547,57 +517,111 @@ export function TicketDetails() {
                       </SelectContent>
                     </Select>
                   </div>
-                )}
+                </div>
 
-                {/* Section Selection - only show if sections available */}
-                {availableSections && availableSections.length > 0 && (
+                {/* Venue */}
+                <div className="flex items-start gap-3">
+                  <div className="text-[#AEE301]">
+                    <MapPin size={24} strokeWidth={1.5} />
+                  </div>
                   <div>
-                    <label className="text-sm text-gray-400 mb-1 block">
-                      Select Section
-                    </label>
-                    <Select
-                      value={selectedSectionId}
-                      onValueChange={setSelectedSectionId}
-                    >
-                      <SelectTrigger className="w-full bg-neutral-800 border-neutral-700 text-white hover:bg-neutral-700 hover:border-neutral-600 transition-colors h-12">
-                        <SelectValue placeholder="Select section">
-                          <div className="flex items-center">
-                            <Armchair className="w-4 h-4 mr-2 text-red-500 flex-shrink-0" />
-                            {selectedSectionId && availableSections ? (
-                              <div className="flex items-center justify-between w-full">
-                                <span className="text-white">
+                    <p className="text-neutral-400 text-xs font-normal leading-none">
+                      Venue
+                    </p>
+                    <p className="text-base leading-snug font-normal text-white">
+                      {ticket.venue}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Ticket Quantity Selection */}
+                <div className="flex items-start gap-3">
+                  <div className="text-[#AEE301]">
+                    <TicketIcon size={24} strokeWidth={1.5} />
+                  </div>
+                  <div>
+                    <p className="text-neutral-400 text-xs font-normal leading-none">
+                      Tickets
+                    </p>
+                    <div className="flex gap-3 items-center mt-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-6 w-6 bg-neutral-700 border-neutral-600 hover:bg-neutral-600 rounded-full p-0"
+                        onClick={() =>
+                          setSelectedTickets(Math.max(1, selectedTickets - 1))
+                        }
+                        disabled={selectedTickets <= 1}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="text-base leading-snug font-normal text-white">
+                        {selectedTickets}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-6 w-6 bg-neutral-700 border-neutral-600 hover:bg-neutral-600 rounded-full p-0"
+                        onClick={() =>
+                          setSelectedTickets(Math.min(10, selectedTickets + 1))
+                        }
+                        disabled={selectedTickets >= 10}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section Selection - simplified but visible */}
+                {availableSections && availableSections.length > 0 && (
+                  <div className="flex items-start gap-3">
+                    <div className="text-[#AEE301]">
+                      <Armchair size={24} strokeWidth={1.5} />
+                    </div>
+                    <div>
+                      <p className="text-neutral-400 text-xs font-normal leading-none">
+                        Section
+                      </p>
+                      <Select
+                        value={selectedSectionId}
+                        onValueChange={setSelectedSectionId}
+                      >
+                        <SelectTrigger className="w-full bg-transparent border-0 p-0 text-white hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none h-auto">
+                          <SelectValue placeholder="Select section">
+                            <div className="flex items-center">
+                              {selectedSectionId && availableSections ? (
+                                <span className="text-base leading-snug font-normal text-white">
                                   {
                                     availableSections.find(
                                       (s) => s.id === selectedSectionId
                                     )?.name
                                   }
                                 </span>
-                              </div>
-                            ) : (
-                              <span>Select section</span>
-                            )}
+                              ) : (
+                                <span>Select section</span>
+                              )}
+                            </div>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent
+                          className="bg-neutral-900 border border-neutral-700 text-white max-h-[300px] p-0 rounded-lg shadow-lg"
+                          position="popper"
+                          sideOffset={4}
+                          align="center"
+                        >
+                          <div className="py-2 px-3 border-b border-neutral-700 bg-neutral-800">
+                            <h4 className="text-sm font-medium text-white">
+                              Available Sections
+                            </h4>
                           </div>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent
-                        className="bg-neutral-900 border border-neutral-700 text-white max-h-[300px] p-0 rounded-lg shadow-lg"
-                        position="popper"
-                        sideOffset={4}
-                        align="center"
-                      >
-                        <div className="py-2 px-3 border-b border-neutral-700 bg-neutral-800">
-                          <h4 className="text-sm font-medium text-white">
-                            Available Sections
-                          </h4>
-                        </div>
-                        <div className="py-1">
-                          {availableSections.map((section) => (
-                            <SelectItem
-                              key={section.id}
-                              value={section.id}
-                              className="cursor-pointer transition-colors data-[highlighted]:bg-neutral-800 data-[state=checked]:bg-neutral-800 data-[highlighted]:text-white rounded-none px-3 py-2.5"
-                            >
-                              <div className="flex items-center justify-between w-full gap-4">
+                          <div className="py-1">
+                            {availableSections.map((section) => (
+                              <SelectItem
+                                key={section.id}
+                                value={section.id}
+                                className="cursor-pointer transition-colors data-[highlighted]:bg-neutral-800 data-[state=checked]:bg-neutral-800 data-[highlighted]:text-white rounded-none px-3 py-2.5"
+                              >
                                 <div className="flex items-center">
                                   {selectedSectionId === section.id ? (
                                     <div className="h-5 w-5 rounded-full border border-red-500 flex items-center justify-center mr-2 flex-shrink-0">
@@ -606,201 +630,325 @@ export function TicketDetails() {
                                   ) : (
                                     <div className="h-5 w-5 rounded-full border border-neutral-600 mr-2 flex-shrink-0"></div>
                                   )}
-                                  <Armchair className="w-4 h-4 mr-2 text-red-500 flex-shrink-0" />
                                   <span>{section.name}</span>
                                 </div>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </div>
-                      </SelectContent>
-                    </Select>
+                              </SelectItem>
+                            ))}
+                          </div>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 )}
 
-                <div>
-                  <label className="text-sm text-gray-400 mb-1 block">
-                    Number of Tickets
-                  </label>
-                  <Select
-                    value={selectedTickets.toString()}
-                    onValueChange={(value) =>
-                      setSelectedTickets(parseInt(value))
-                    }
-                  >
-                    <SelectTrigger className="w-full bg-neutral-800 border-neutral-700 text-white hover:bg-neutral-700 hover:border-neutral-600 transition-colors h-12">
-                      <SelectValue placeholder="Select tickets">
-                        <div className="flex items-center">
-                          <Users className="w-4 h-4 mr-2 text-red-500 flex-shrink-0" />
-                          <div className="flex items-center justify-between w-full">
-                            <span>
-                              {selectedTickets}{" "}
-                              {selectedTickets === 1 ? "ticket" : "tickets"}
-                            </span>
-                          </div>
-                        </div>
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent
-                      className="bg-neutral-900 border border-neutral-700 text-white max-h-[300px] p-0 rounded-lg shadow-lg"
-                      position="popper"
-                      sideOffset={4}
-                      align="center"
+                {/* Hidden inputs - keeping hidden functionality */}
+                <div className="hidden">
+                  {/* Section Selection - only show if sections available */}
+                  {availableSections && availableSections.length > 0 && (
+                    <div>
+                      <label className="text-sm text-gray-400 mb-1 block">
+                        Select Section
+                      </label>
+                      <Select
+                        value={selectedSectionId}
+                        onValueChange={setSelectedSectionId}
+                      >
+                        <SelectTrigger className="w-full bg-neutral-800 border-neutral-700 text-white">
+                          <SelectValue placeholder="Select section" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableSections.map((section) => (
+                            <SelectItem key={section.id} value={section.id}>
+                              {section.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Number of tickets */}
+                  <div>
+                    <label className="text-sm text-gray-400 mb-1 block">
+                      Number of Tickets
+                    </label>
+                    <Select
+                      value={selectedTickets.toString()}
+                      onValueChange={(value) =>
+                        setSelectedTickets(parseInt(value))
+                      }
                     >
-                      <div className="py-2 px-3 border-b border-neutral-700 bg-neutral-800">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-medium text-white">
-                            Quick Selection
-                          </h4>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-7 w-7 bg-neutral-700 border-neutral-600 hover:bg-neutral-600"
-                              onClick={() =>
-                                setSelectedTickets(
-                                  Math.max(1, selectedTickets - 1)
-                                )
-                              }
-                              disabled={selectedTickets <= 1}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <span className="w-6 text-center font-medium">
-                              {selectedTickets}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-7 w-7 bg-neutral-700 border-neutral-600 hover:bg-neutral-600"
-                              onClick={() =>
-                                setSelectedTickets(
-                                  Math.min(10, selectedTickets + 1)
-                                )
-                              }
-                              disabled={selectedTickets >= 10}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-5 gap-1.5 p-3 border-b border-neutral-700">
+                      <SelectTrigger className="w-full bg-neutral-800 border-neutral-700 text-white">
+                        <SelectValue placeholder="Select number of tickets" />
+                      </SelectTrigger>
+                      <SelectContent>
                         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                          <div key={num}>
-                            <SelectItem
-                              value={num.toString()}
-                              className={cn(
-                                "h-10 rounded-md text-sm font-medium flex items-center justify-center cursor-pointer m-0 p-0 data-[highlighted]:bg-transparent",
-                                selectedTickets === num
-                                  ? "bg-red-600 text-white hover:bg-red-600/90"
-                                  : "bg-neutral-700 text-white hover:bg-neutral-600"
-                              )}
-                            >
-                              <div className="flex items-center justify-center w-full h-full">
-                                {num}
-                              </div>
-                            </SelectItem>
-                          </div>
+                          <SelectItem key={num} value={num.toString()}>
+                            {num} {num === 1 ? "ticket" : "tickets"}
+                          </SelectItem>
                         ))}
-                      </div>
-
-                      <div className="py-1 max-h-[150px] overflow-y-auto">
-                        {Array.from({ length: 10 }, (_, i) => i + 1).map(
-                          (num) => (
-                            <SelectItem
-                              key={`list-${num}`}
-                              value={num.toString()}
-                              className="cursor-pointer transition-colors data-[highlighted]:bg-neutral-800 data-[state=checked]:bg-neutral-800 data-[highlighted]:text-white rounded-none px-3 py-2.5"
-                            >
-                              <div className="flex items-center justify-between w-full">
-                                <div className="flex items-center">
-                                  {selectedTickets === num ? (
-                                    <div className="h-5 w-5 rounded-full border border-red-500 flex items-center justify-center mr-2 flex-shrink-0">
-                                      <div className="h-3 w-3 rounded-full bg-red-500"></div>
-                                    </div>
-                                  ) : (
-                                    <div className="h-5 w-5 rounded-full border border-neutral-600 mr-2 flex-shrink-0"></div>
-                                  )}
-                                  <Users className="w-4 h-4 mr-2 text-red-500 flex-shrink-0" />
-                                  <span>
-                                    {num} {num === 1 ? "ticket" : "tickets"}
-                                  </span>
-                                </div>
-                                <span className="text-sm text-gray-300 font-medium">
-                                  {getCurrentSectionPrice().currency}{" "}
-                                  {(
-                                    getCurrentSectionPrice().amount * num
-                                  ).toLocaleString()}
-                                </span>
-                              </div>
-                            </SelectItem>
-                          )
-                        )}
-                      </div>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="pt-4 mt-4 border-t border-neutral-800">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-gray-400">Subtotal</span>
-                    <span className="text-white">
-                      {getCurrentSectionPrice().currency}{" "}
-                      {(
-                        getCurrentSectionPrice().amount * selectedTickets
-                      ).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex justify-between mb-2">
-                    <span className="text-gray-400">Service Fee</span>
-                    <span className="text-white">
-                      {getCurrentSectionPrice().currency}{" "}
-                      {(
-                        getCurrentSectionPrice().amount *
-                        selectedTickets *
-                        0.05
-                      ).toFixed(2)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold mt-4">
-                    <span>Total</span>
-                    <span className="text-red-500">
-                      {getCurrentSectionPrice().currency}{" "}
-                      {(
-                        getCurrentSectionPrice().amount * selectedTickets +
-                        getCurrentSectionPrice().amount * selectedTickets * 0.05
-                      ).toFixed(2)}
-                    </span>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
+              </div>
 
+              {/* Separator line */}
+              <div className="h-[2px] bg-neutral-700 "></div>
+
+              {/* Price section */}
+              <div className="flex mt-12 justify-between items-center">
+                <div>
+                  <p className="text-sm font-normal leading-tight text-white">
+                    Starts from
+                  </p>
+                  <p className="text-2xl leading-none text-neutral-50 font-bold">
+                    ₹{getCurrentSectionPrice().amount.toLocaleString()} Onwards
+                  </p>
+                </div>
+
+                {/* Button */}
                 <Button
                   type="button"
-                  className="w-full py-6 bg-[#e31001] hover:bg-[#d31001] text-white font-medium text-lg mt-4 rounded-xl transition-colors flex items-center justify-center"
+                  className="bg-[#e31001] hover:bg-[#d31001] text-white px-6 py-3 rounded-xl inline-flex justify-center items-center gap-2 overflow-hidden"
                   disabled={isCreatingBooking || !selectedSectionId}
                   onClick={handleProceedToPayment}
                 >
                   {isCreatingBooking ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating booking...
+                      Processing...
                     </>
-                  ) : isAuthenticated ? (
-                    "Proceed to Payment"
                   ) : (
-                    "Sign in to Book"
+                    "Buy Now"
                   )}
                 </Button>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Mobile and Tablet Layout */}
+        <div className="lg:hidden">
+          {/* Banner Image */}
+          <div className="overflow-hidden rounded-2xl shadow-xl mb-6">
+            <img
+              src={ticket.thumbnailUrl}
+              alt={ticket.title}
+              className="w-full object-cover h-auto"
+            />
+          </div>
+
+          {/* Title and basic info */}
+          <h1 className="text-2xl font-semibold text-white mb-6">
+            {ticket.title}
+          </h1>
+
+          {/* Event Details with Icons */}
+          <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="flex items-center gap-3">
+              <div className="text-[#AEE301]">
+                <Calendar size={20} strokeWidth={1.5} />
+              </div>
+              <div>
+                <p className="text-neutral-400 text-xs leading-none">Date</p>
+                <p className="text-white text-base">{ticket.date}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="text-[#AEE301]">
+                <Clock size={20} strokeWidth={1.5} />
+              </div>
+              <div>
+                <p className="text-neutral-400 text-xs leading-none">Time</p>
+                <p className="text-white text-base">
+                  {ticket.time || "8:00 PM"}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="text-[#AEE301]">
+                <Timer size={20} strokeWidth={1.5} />
+              </div>
+              <div>
+                <p className="text-neutral-400 text-xs leading-none">
+                  Duration
+                </p>
+                <p className="text-white text-base">{ticket.duration}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="text-[#AEE301]">
+                <MapPin size={20} strokeWidth={1.5} />
+              </div>
+              <div>
+                <p className="text-neutral-400 text-xs leading-none">Venue</p>
+                <p className="text-white text-base">{ticket.venue}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="mb-8">
+            <h2 className="text-xl font-medium text-white mb-3">Description</h2>
+            <div className="text-gray-300 space-y-3">
+              {ticket.description.map((paragraph, index) => (
+                <p key={index}>{paragraph}</p>
+              ))}
+            </div>
+          </div>
+
+          {/* Additional Info Cards */}
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="bg-neutral-800 rounded-2xl p-4 flex items-center">
+              <div className="bg-neutral-900 rounded-full p-3 mr-3">
+                <Timer className="text-[#AEE301] h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-neutral-400 text-xs">Duration</p>
+                <p className="text-white text-sm">{ticket.duration}</p>
+              </div>
+            </div>
+
+            <div className="bg-neutral-800 rounded-2xl p-4 flex items-center">
+              <div className="bg-neutral-900 rounded-full p-3 mr-3">
+                <Info className="text-[#AEE301] h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-neutral-400 text-xs">Min. Age</p>
+                <p className="text-white text-sm">
+                  {ticket.ageLimit || "16 & above"}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-neutral-800 rounded-2xl p-4 flex items-center">
+              <div className="bg-neutral-900 rounded-full p-3 mr-3">
+                <Users className="text-[#AEE301] h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-neutral-400 text-xs">Language</p>
+                <p className="text-white text-sm">English & Hindi</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Booking Options */}
+          <div className="bg-neutral-800 rounded-2xl p-5 mb-6">
+            {/* Ticket Selection */}
+            <div className="flex items-start gap-3 mb-5">
+              <div className="text-[#AEE301]">
+                <TicketIcon size={20} strokeWidth={1.5} />
+              </div>
+              <div className="flex-1">
+                <p className="text-neutral-400 text-xs mb-1">Tickets</p>
+                <div className="flex justify-between items-center">
+                  <div className="flex gap-3 items-center">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-6 w-6 bg-neutral-700 border-neutral-600 hover:bg-neutral-600 rounded-full p-0"
+                      onClick={() =>
+                        setSelectedTickets(Math.max(1, selectedTickets - 1))
+                      }
+                      disabled={selectedTickets <= 1}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <span className="text-base text-white">
+                      {selectedTickets}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-6 w-6 bg-neutral-700 border-neutral-600 hover:bg-neutral-600 rounded-full p-0"
+                      onClick={() =>
+                        setSelectedTickets(Math.min(10, selectedTickets + 1))
+                      }
+                      disabled={selectedTickets >= 10}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Section Selection */}
+            {availableSections && availableSections.length > 0 && (
+              <div className="flex items-start gap-3 mb-5">
+                <div className="text-[#AEE301]">
+                  <Armchair size={20} strokeWidth={1.5} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-neutral-400 text-xs mb-1">Section</p>
+                  <Select
+                    value={selectedSectionId}
+                    onValueChange={setSelectedSectionId}
+                  >
+                    <SelectTrigger className="w-full bg-neutral-700 border-0 text-white rounded-lg h-10">
+                      <SelectValue placeholder="Select section">
+                        {selectedSectionId && availableSections
+                          ? availableSections.find(
+                              (s) => s.id === selectedSectionId
+                            )?.name
+                          : "Select section"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-neutral-900 border-neutral-700">
+                      {availableSections.map((section) => (
+                        <SelectItem key={section.id} value={section.id}>
+                          {section.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Fixed Bar with Price and Button */}
+          <div className="fixed bottom-0 left-0 right-0 bg-neutral-800 p-4 border-t border-neutral-700 flex justify-between items-center z-10">
+            <div>
+              <p className="text-xs text-neutral-400">Starts from</p>
+              <p className="text-xl text-white font-bold">
+                ₹{getCurrentSectionPrice().amount.toLocaleString()}{" "}
+                <span className="text-xs font-normal">Onwards</span>
+              </p>
+            </div>
+            <Button
+              type="button"
+              className="bg-[#e31001] hover:bg-[#d31001] text-white px-6 py-3 rounded-xl inline-flex justify-center items-center gap-2"
+              disabled={isCreatingBooking || !selectedSectionId}
+              onClick={handleProceedToPayment}
+            >
+              {isCreatingBooking ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Buy Now"
+              )}
+            </Button>
+          </div>
+
+          {/* Spacer to prevent content from being hidden behind fixed bottom bar */}
+          <div className="h-20"></div>
+        </div>
+      </div>
+
+      {/* Similar Shows */}
+      <div className="mt-30">
+        <UpcomingShows title="Similar Shows" limit={3} />
       </div>
 
       {/* Related Shows */}
-      <div className="mt-16 bg-[#171717]">
+      <div className="mt-16">
         <LatestUploads shows={latestShows} />
       </div>
 

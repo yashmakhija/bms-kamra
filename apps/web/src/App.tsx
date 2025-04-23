@@ -13,6 +13,8 @@ import PaymentCancelPage from "./pages/payment/cancel";
 import Tickets from "./pages/tickets";
 import Podcasts from "./pages/podcasts";
 import LatestUploads from "./pages/latest-uploads";
+import { ErrorPage } from "./components/errorPage";
+import ComingSoon from "./components/comingSoon";
 function App() {
   return (
     <AuthProvider>
@@ -33,6 +35,9 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route path="/bookings" element={<ComingSoon />} />
+          <Route path="/settings" element={<ComingSoon />} />
 
           <Route
             path="/profile"
@@ -74,7 +79,7 @@ function App() {
           <Route path="/podcasts" element={<Podcasts />} />
           <Route path="/latest-uploads" element={<LatestUploads />} />
           {/* Fallback route */}
-          <Route path="*" element={<div>Page not found</div>} />
+          <Route path="*" element={<ErrorPage />} />
         </Routes>
         <Footer />
       </Router>

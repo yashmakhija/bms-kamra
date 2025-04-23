@@ -11,7 +11,7 @@ export function HomePage() {
     <>
       <Hero />
       <AboutMe />
-      <UpcomingShows />
+      <UpcomingShows title="Upcoming Shows" />
       <Podcast shows={podcastShows} title="Podcasts" />
       <LatestUploads shows={latestShows} />
       <RecentArticles />

@@ -131,11 +131,15 @@ function ShowCard({ show, onClick, isSelected, isLoading }: ShowCardProps) {
 interface UpcomingShowsProps {
   shows?: Show[];
   className?: string;
+  title?: string;
+  limit?: number;
 }
 
 export function UpcomingShows({
   shows: propShows,
   className,
+  title,
+  limit = 6,
 }: UpcomingShowsProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -155,6 +159,9 @@ export function UpcomingShows({
 
   // Use API shows if no props were passed
   const shows = propShows || storeShows;
+
+  // Apply limit to shows
+  const limitedShows = limit ? shows.slice(0, limit) : shows;
 
   // Fetch shows from API on component mount
   useEffect(() => {
@@ -234,7 +241,7 @@ export function UpcomingShows({
       <div className="container mx-auto px-4 md:px-8 lg:px-30">
         <div className="flex justify-between items-center mb-8">
           <div className="text-white text-3xl font-bold leading-10">
-            Upcoming Shows
+            {title}
           </div>
 
           <div className="sm:hidden md:block">
@@ -261,7 +268,7 @@ export function UpcomingShows({
               WebkitOverflowScrolling: "touch",
             }}
           >
-            {shows.map((show) => (
+            {limitedShows.map((show) => (
               <div
                 key={show.id}
                 className="flex-shrink-0 snap-start snap-always"
@@ -284,7 +291,7 @@ export function UpcomingShows({
         {/* Desktop View: 3-Column Grid */}
         <div className="hidden xl:block">
           <div className="grid grid-cols-3 gap-19">
-            {shows.slice(0, 6).map((show) => (
+            {limitedShows.map((show) => (
               <ShowCard
                 key={show.id}
                 show={show}
