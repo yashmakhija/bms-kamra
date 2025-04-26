@@ -20,7 +20,14 @@ import {
 } from "../middlewares/rateLimitMiddleware";
 import { createServiceLogger } from "../utils/logger";
 import { config } from "../config";
-
+import { authMiddleware } from "../middlewares/authMiddleware";
+import {
+  bookingQueue,
+  ticketQueue,
+  paymentQueue,
+  notificationQueue,
+} from "../lib/queue";
+import { JobId } from "bull";
 const router: Router = Router();
 const logger = createServiceLogger("routes");
 
@@ -49,8 +56,8 @@ router.use("/admin", generalRateLimit, adminRoutes);
 router.use(
   "/venues",
   publicEndpointRateLimit,
-  showCreationCacheInvalidation(),  
-  cacheMiddleware({ ttl: config.cache.venueTTL }), 
+  showCreationCacheInvalidation(),
+  cacheMiddleware({ ttl: config.cache.venueTTL }),
   venueRoutes
 );
 
@@ -95,6 +102,50 @@ router.use("/bookings", generalRateLimit, bookingRoutes);
 
 // Razorpay - payment gateway integration
 router.use("/razorpay", generalRateLimit, razorpayRoutes);
+
+// Add job status endpoint
+router.get("/jobs/:jobId", authMiddleware, async (req, res) => {
+  try {
+    const { jobId } = req.params;
+
+    // Try to find the job in each queue
+    const queues = [bookingQueue, ticketQueue, paymentQueue, notificationQueue];
+    const queueNames = ["booking", "ticket", "payment", "notification"];
+
+    for (let i = 0; i < queues.length; i++) {
+      const job = await queues[i]?.getJob(jobId as JobId);
+
+      if (job) {
+        const state = await job.getState();
+        const reason = job.failedReason;
+        const result = job.returnvalue;
+
+        return res.status(StatusCodes.OK).json({
+          jobId,
+          queue: queueNames[i],
+          state,
+          ...(reason && { reason }),
+          ...(result && { result }),
+          data: job.data,
+          progress: job.progress(),
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+
+    // Job not found in any queue
+    return res.status(StatusCodes.NOT_FOUND).json({
+      message: "Job not found",
+      jobId,
+    });
+  } catch (error) {
+    console.error("Error getting job status:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      message: "Failed to get job status",
+      error: (error as Error).message,
+    });
+  }
+});
 
 // Catch-all for invalid routes
 router.all("*", (req, res) => {

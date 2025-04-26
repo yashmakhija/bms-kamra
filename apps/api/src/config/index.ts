@@ -22,6 +22,24 @@ export const config = {
     ),
     queryTimeout: parseInt(process.env.DATABASE_QUERY_TIMEOUT || "30000", 10),
     debugEnabled: process.env.DEBUG_PRISMA === "true",
+    primaryConnection: process.env.DATABASE_URL,
+    readReplicaUrls: process.env.DATABASE_READ_REPLICAS
+      ? process.env.DATABASE_READ_REPLICAS.split(",")
+      : [],
+    useReadReplica: process.env.USE_READ_REPLICA === "true",
+    minPoolSize: parseInt(process.env.DB_MIN_POOL_SIZE || "2", 10),
+    maxPoolSize: parseInt(process.env.DB_MAX_POOL_SIZE || "10", 10),
+    connectionTimeoutMs: parseInt(
+      process.env.DB_CONNECTION_TIMEOUT || "30000",
+      10
+    ),
+    statementTimeoutMs: parseInt(
+      process.env.DB_STATEMENT_TIMEOUT || "60000",
+      10
+    ),
+    shardingEnabled: process.env.DB_SHARDING_ENABLED === "true",
+    shardingKey: process.env.DB_SHARDING_KEY || "userId",
+    shardCount: parseInt(process.env.DB_SHARD_COUNT || "1", 10),
   },
   auth: {
     jwtSecret:
@@ -39,13 +57,23 @@ export const config = {
   },
   redis: {
     url: process.env.REDIS_URL || "redis://localhost:6379",
+    host: process.env.REDIS_HOST || "localhost",
+    port: parseInt(process.env.REDIS_PORT || "6379", 10),
     password: process.env.REDIS_PASSWORD || undefined,
+    keyPrefix: process.env.REDIS_KEY_PREFIX || "bms:",
+    useTLS: process.env.REDIS_USE_TLS === "true",
+    db: parseInt(process.env.REDIS_DB || "0", 10),
     enableCluster: process.env.REDIS_CLUSTER_ENABLED === "true",
     clusterNodes: process.env.REDIS_CLUSTER_NODES
-      ? process.env.REDIS_CLUSTER_NODES.split(",").map((node) => node.trim())
+      ? process.env.REDIS_CLUSTER_NODES.split(",")
       : [],
-    keyPrefix: process.env.REDIS_KEY_PREFIX || "bms:",
-    defaultTTL: parseInt(process.env.REDIS_DEFAULT_TTL || "3600", 10), // Default 1 hour
+    defaultTTL: parseInt(process.env.REDIS_DEFAULT_TTL || "3600", 10), // 1 hour
+    highVolumeTTL: parseInt(process.env.REDIS_HIGH_VOLUME_TTL || "300", 10), // 5 minutes
+    longTermTTL: parseInt(process.env.REDIS_LONG_TERM_TTL || "86400", 10), // 24 hours
+    seatAvailabilityTTL: parseInt(
+      process.env.SEAT_AVAILABILITY_TTL || "60",
+      10
+    ), // 1 minute
   },
   cache: {
     showTTL: parseInt(process.env.CACHE_SHOW_TTL || "60", 10), // Reduced to 1 minute (was 3600/1 hour)
@@ -69,6 +97,12 @@ export const config = {
     maxFiles: process.env.LOG_MAX_FILES || "14d",
   },
   queue: {
-    concurrency: parseInt(process.env.QUEUE_CONCURRENCY || "10", 10),
+    concurrency: parseInt(process.env.QUEUE_CONCURRENCY || "5", 10),
+    limiter: {
+      max: parseInt(process.env.QUEUE_RATE_LIMIT_MAX || "1000", 10),
+      duration: parseInt(process.env.QUEUE_RATE_LIMIT_DURATION || "60000", 10), // 1 minute
+    },
+    monitoringEnabled: process.env.QUEUE_MONITORING_ENABLED === "true",
+    monitoringPath: process.env.QUEUE_MONITORING_PATH || "/admin/queues",
   },
 };

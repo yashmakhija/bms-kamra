@@ -13,6 +13,24 @@ import { prisma } from "./lib/database";
 import checkDatabaseConnection from "./utils/dbCheck";
 import { initializeDefaultCategories } from "./services/categoryService";
 
+// Import Bull Board for queue monitoring
+import { createBullBoard } from "@bull-board/api";
+import { BullAdapter } from "@bull-board/api/bullAdapter";
+import { ExpressAdapter } from "@bull-board/express";
+
+// Import queue and worker system
+import {
+  bookingQueue,
+  ticketQueue,
+  paymentQueue,
+  notificationQueue,
+} from "./lib/queue";
+import { initializeScheduler } from "./workers/schedulerWorker";
+import "./workers/bookingWorker";
+import "./workers/ticketWorker";
+import "./workers/paymentWorker";
+import "./workers/notificationWorker";
+
 // Create application instance
 const app = express();
 const serverLogger = createServiceLogger("server");
@@ -38,6 +56,42 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 
 // Mount API routes
 app.use("/api", apiRoutes);
+
+// Set up Bull Board for queue monitoring (admin only)
+if (config.queue.monitoringEnabled) {
+  const serverAdapter = new ExpressAdapter();
+  serverAdapter.setBasePath(config.queue.monitoringPath);
+
+  const { addQueue, removeQueue, setQueues, replaceQueues } = createBullBoard({
+    queues: [
+      new BullAdapter(bookingQueue),
+      new BullAdapter(ticketQueue),
+      new BullAdapter(paymentQueue),
+      new BullAdapter(notificationQueue),
+    ],
+    serverAdapter,
+  });
+
+  // Secure the queue monitoring with admin middleware
+  app.use(
+    config.queue.monitoringPath,
+    (req: Request, res: Response, next: NextFunction) => {
+      // You should use your actual admin auth middleware here
+      const isAdmin = (req as any).isAdmin;
+      if (!isAdmin) {
+        return res.status(StatusCodes.UNAUTHORIZED).json({
+          status: "error",
+          message: "Admin access required",
+          code: StatusCodes.UNAUTHORIZED,
+        });
+      }
+      next();
+    },
+    serverAdapter.getRouter()
+  );
+
+  logger.info(`Queue monitoring available at ${config.queue.monitoringPath}`);
+}
 
 // Health check endpoint
 app.get("/health", async (req: Request, res: Response) => {
@@ -84,6 +138,10 @@ const server = app.listen(PORT, async () => {
 
   // Initialize default data after server starts
   await initializeData();
+
+  // Initialize scheduler for recurring tasks
+  initializeScheduler();
+  serverLogger.info("Background task scheduler initialized");
 });
 
 // Set timeout for long-running requests

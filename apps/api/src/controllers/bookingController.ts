@@ -1,8 +1,12 @@
 import { Request, Response } from "express";
 import { AuthRequest } from "../types";
-import * as bookingService from "../services/bookingService";
+import { bookingQueue, paymentQueue } from "../lib/queue";
+import { getDbClient } from "../lib/database";
 import { AppError } from "../utils/errors";
 import { StatusCodes } from "http-status-codes";
+import { createServiceLogger } from "../utils/logger";
+
+const logger = createServiceLogger("booking-controller");
 
 /**
  * Create a new booking
@@ -22,16 +26,32 @@ export const createBooking = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const result = await bookingService.createBooking({
-      userId,
-      showtimeId,
-      sectionId,
-      quantity: Number(quantity),
-    });
+    // Add job to booking queue
+    const job = await bookingQueue.add(
+      "create-booking",
+      {
+        userId,
+        showtimeId,
+        sectionId,
+        quantity: Number(quantity),
+      },
+      {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 2000,
+        },
+        timeout: 30000, // 30 seconds timeout
+      }
+    );
 
-    return res.status(201).json(result);
+    return res.status(202).json({
+      message: "Booking request accepted",
+      jobId: job.id,
+      status: "processing",
+    });
   } catch (error) {
-    console.error("Create booking error:", error);
+    logger.error("Create booking error:", { error });
     if (error instanceof AppError) {
       return res.status(error.statusCode).json({
         message: error.message,
@@ -55,11 +75,39 @@ export const getUserBookings = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: "User not authenticated" });
     }
 
-    const bookings = await bookingService.getUserBookings(userId);
+    const bookings = await getDbClient("read").booking.findMany({
+      where: { userId },
+      include: {
+        tickets: {
+          include: {
+            section: {
+              include: {
+                showtime: {
+                  include: {
+                    event: {
+                      include: {
+                        show: {
+                          select: {
+                            id: true,
+                            title: true,
+                            imageUrl: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
     return res.status(200).json(bookings);
   } catch (error) {
-    console.error("Get user bookings error:", error);
+    logger.error("Get user bookings error:", { error });
     if (error instanceof AppError) {
       return res.status(error.statusCode).json({ message: error.message });
     }
@@ -75,72 +123,44 @@ export const getBookingById = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.id;
   const isAdmin = req.isAdmin;
 
-  // Start with detailed request logging
-  console.log(`[DEBUG] getBookingById - Request received`, {
-    bookingId,
-    userId,
-    isAdmin,
-    tokenExists: !!req.headers.authorization,
-    userAgent: req.headers["user-agent"],
-    referer: req.headers.referer || "none",
-    timestamp: new Date().toISOString(),
-  });
-
   try {
     if (!userId) {
-      console.log(
-        `[DEBUG] getBookingById - Auth failure: No user ID in request`
-      );
       return res.status(401).json({ message: "User not authenticated" });
     }
 
-    // Log the exact params being passed to the service
-    console.log(`[DEBUG] getBookingById - Calling service`, {
-      bookingId: bookingId,
-      passingUserId: isAdmin ? "undefined (admin access)" : userId,
-      callerIsAdmin: isAdmin,
-    });
-
-    const booking = await bookingService.getBookingById(
-      bookingId as string,
-      req.isAdmin ? undefined : userId
-    );
-
-    // Log successful retrieval
-    console.log(`[DEBUG] getBookingById - Booking retrieved successfully`, {
-      bookingId,
-      bookingUserId: booking.userId,
-      requestUserId: userId,
-      matches: booking.userId === userId || isAdmin,
-      status: booking.status,
+    const booking = await getDbClient("read").booking.findUnique({
+      where: {
+        id: bookingId as string,
+        ...(isAdmin ? {} : { userId }), // Only admins can view any booking
+      },
+      include: {
+        tickets: {
+          include: {
+            section: {
+              include: {
+                showtime: {
+                  include: {
+                    event: {
+                      include: {
+                        show: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!booking) {
-      console.log(`[DEBUG] getBookingById - Booking not found`, { bookingId });
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    // Log successful response
-    console.log(`[DEBUG] getBookingById - Success response sent`, {
-      bookingId,
-      userId,
-    });
     return res.status(200).json(booking);
   } catch (error) {
-    // Enhanced error logging
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
-    const errorCode = error instanceof AppError ? error.statusCode : 500;
-
-    console.error(`[DEBUG] getBookingById - Error`, {
-      bookingId,
-      userId,
-      error: errorMessage,
-      stack: error instanceof Error ? error.stack : "No stack trace",
-      statusCode: errorCode,
-      type: error instanceof AppError ? "AppError" : "Unknown",
-    });
-
+    logger.error("Get booking by ID error:", { error, bookingId });
     if (error instanceof AppError) {
       return res.status(error.statusCode).json({ message: error.message });
     }
@@ -160,14 +180,30 @@ export const cancelBooking = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: "User not authenticated" });
     }
 
-    const result = await bookingService.cancelBooking(
-      bookingId as string,
-      userId
+    // Add job to booking queue
+    const job = await bookingQueue.add(
+      "cancel-booking",
+      {
+        bookingId,
+        userId,
+      },
+      {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 2000,
+        },
+        timeout: 30000, // 30 seconds timeout
+      }
     );
 
-    return res.status(200).json(result);
+    return res.status(202).json({
+      message: "Booking cancellation request accepted",
+      jobId: job.id,
+      status: "processing",
+    });
   } catch (error) {
-    console.error("Cancel booking error:", error);
+    logger.error("Cancel booking error:", { error });
     if (error instanceof AppError) {
       return res.status(error.statusCode).json({ message: error.message });
     }
@@ -183,7 +219,7 @@ export const cancelBooking = async (req: AuthRequest, res: Response) => {
 export const processPayment = async (req: AuthRequest, res: Response) => {
   try {
     const { bookingId } = req.params;
-    const { paymentMethod, paymentId } = req.body;
+    const { paymentMethod, paymentId, paymentData } = req.body;
     const userId = req.user?.id;
 
     if (!userId) {
@@ -196,32 +232,45 @@ export const processPayment = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const booking = await bookingService.getBookingById(
-      bookingId as string,
-      userId
-    );
+    // Validate booking exists and belongs to user
+    const booking = await getDbClient("read").booking.findUnique({
+      where: {
+        id: bookingId as string,
+        userId,
+      },
+    });
 
     if (!booking) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    if (paymentMethod === "RAZORPAY") {
-      return res.status(400).json({
-        message:
-          "For Razorpay payments, use the /razorpay/verify/:bookingId endpoint",
-        redirectTo: `/razorpay/verify/${bookingId}`,
-      });
-    }
-
-    const result = await bookingService.processPayment(
-      bookingId as string,
-      paymentMethod,
-      paymentId
+    // Add job to payment queue
+    const job = await paymentQueue.add(
+      "verify-payment",
+      {
+        bookingId,
+        paymentMethod,
+        paymentId,
+        paymentData: paymentData || {},
+        userId,
+      },
+      {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 2000,
+        },
+        timeout: 60000, // 60 seconds timeout for payment processing
+      }
     );
 
-    return res.status(200).json(result);
+    return res.status(202).json({
+      message: "Payment verification in progress",
+      jobId: job.id,
+      status: "processing",
+    });
   } catch (error) {
-    console.error("Process payment error:", error);
+    logger.error("Process payment error:", { error });
     if (error instanceof AppError) {
       return res.status(error.statusCode).json({ message: error.message });
     }
@@ -242,17 +291,84 @@ export const getAllBookings = async (req: AuthRequest, res: Response) => {
     const userId = req.query.userId as string | undefined;
     const showId = req.query.showId as string | undefined;
 
-    const result = await bookingService.getAllBookings({
-      page,
-      limit,
-      status,
-      userId,
-      showId,
+    const skip = (page - 1) * limit;
+
+    // Construct filter
+    const filter: any = {};
+    if (status) filter.status = status;
+    if (userId) filter.userId = userId;
+    if (showId) {
+      filter.tickets = {
+        some: {
+          section: {
+            showtime: {
+              event: {
+                show: {
+                  id: showId,
+                },
+              },
+            },
+          },
+        },
+      };
+    }
+
+    // Get total count
+    const totalCount = await getDbClient("read").booking.count({
+      where: filter,
     });
 
-    return res.status(200).json(result);
+    // Get paginated results
+    const bookings = await getDbClient("read").booking.findMany({
+      where: filter,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        },
+        tickets: {
+          include: {
+            section: {
+              include: {
+                showtime: {
+                  include: {
+                    event: {
+                      include: {
+                        show: {
+                          select: {
+                            id: true,
+                            title: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      skip,
+    });
+
+    return res.status(200).json({
+      bookings,
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        pages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error) {
-    console.error("Get all bookings error:", error);
+    logger.error("Get all bookings error:", { error });
     if (error instanceof AppError) {
       return res.status(error.statusCode).json({ message: error.message });
     }

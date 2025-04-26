@@ -120,7 +120,7 @@ export const createPriceTier = async (req: AuthRequest, res: Response) => {
 
     // Get or create default category by type
     const category = await categoryService.getDefaultCategoryByType(
-      categoryType as CategoryType
+      categoryType as keyof typeof CategoryType
     );
 
     // Now create price tier with the appropriate category
