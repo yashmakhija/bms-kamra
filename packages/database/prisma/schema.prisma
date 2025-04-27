@@ -242,6 +242,7 @@ model Ticket {
   ticketLock   TicketLock?
   
   @@index([status])
+  @@index([sectionId])
   @@map("tickets")
 }
 
