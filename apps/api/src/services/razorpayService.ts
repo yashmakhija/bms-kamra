@@ -121,6 +121,7 @@ export async function createOrder(
             ...notes,
             bookingId,
             userId: booking.userId,
+            expires_by: Math.floor(Date.now() / 1000) + 600
           };
 
           logger.info(`Attempting to create Razorpay order`, {

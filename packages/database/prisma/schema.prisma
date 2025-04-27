@@ -216,6 +216,7 @@ model Ticket {
   bookings   Booking[]    @relation("BookingToTicket")
 
   @@index([status])
+  @@index([sectionId])
   @@map("tickets")
 }
 

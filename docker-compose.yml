@@ -1,136 +1,22 @@
-version: "3.8"
-
+version: '3'
 services:
-  # API service
-  api:
-    build:
-      context: .
-      dockerfile: apps/api/Dockerfile
-    ports:
-      - "3000:3000"
-    depends_on:
-      - postgres
-      - redis
-    environment:
-      - NODE_ENV=production
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/bookingsystem?schema=public
-      - REDIS_URL=redis://redis:6379
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - JWT_SECRET=your-jwt-secret-replace-in-production
-      - PORT=3000
-      - USE_READ_REPLICA=false
-      - REDIS_CLUSTER_ENABLED=false
-      - DB_MAX_POOL_SIZE=20
-      - QUEUE_CONCURRENCY=5
-      - QUEUE_MONITORING_ENABLED=true
-    restart: always
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "wget",
-          "--no-verbose",
-          "--tries=1",
-          "--spider",
-          "http://localhost:3000/health",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    deploy:
-      replicas: 2
-      update_config:
-        parallelism: 1
-        delay: 10s
-      restart_policy:
-        condition: on-failure
-
-  # Web frontend
-  web:
-    build:
-      context: .
-      dockerfile: apps/web/Dockerfile
-    ports:
-      - "3001:3001"
-    depends_on:
-      - api
-    environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://api:3000
-    restart: always
-    deploy:
-      replicas: 2
-      update_config:
-        parallelism: 1
-        delay: 10s
-      restart_policy:
-        condition: on-failure
-
-  # Admin interface
-  admin:
-    build:
-      context: .
-      dockerfile: apps/admin-new/Dockerfile
-    ports:
-      - "3002:3002"
-    depends_on:
-      - api
-    environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://api:3000
-    restart: always
-    deploy:
-      replicas: 1
-
-  # PostgreSQL database (primary)
   postgres:
-    image: postgres:16-alpine
+    image: 'postgres:latest'
     ports:
-      - "5432:5432"
+      - '5432:5432'
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=bookingsystem
+      POSTGRES_PASSWORD: 'postgres'
+      POSTGRES_DB: 'postgres'
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-    restart: always
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Redis for caching and job queue
+      - postgres_data:/var/lib/postgresql/data
+    
   redis:
-    image: redis:7-alpine
+    image: 'redis:latest'
     ports:
-      - "6379:6379"
-    command: redis-server --appendonly yes
+      - '6379:6379'
     volumes:
-      - redis-data:/data
-    restart: always
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Nginx for load balancing and routing
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - api
-      - web
-      - admin
-    restart: always
-    deploy:
-      replicas: 1
+      - redis_data:/data
 
 volumes:
-  postgres-data:
-  redis-data:
+  postgres_data:
+  redis_data:

@@ -1081,7 +1081,9 @@ export async function reserveTickets(
       const availableTickets = await prisma.ticket.findMany({
         where: {
           sectionId,
-          status: "AVAILABLE",
+          status: {
+            in: ["AVAILABLE", "CANCELED"],
+          },
         },
         take: quantity,
       });
