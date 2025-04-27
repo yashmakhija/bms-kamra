@@ -31,7 +31,6 @@ import {
   SelectValue,
 } from "@repo/ui/components/ui/select";
 import { Button } from "@repo/ui/components/ui/button";
-import { cn } from "@repo/ui/utils";
 import { SimpleAuthModal } from "../auth/simple-auth-modal";
 import { PaymentModal } from "../booking/payment-modal";
 import { UpcomingShows } from "../home/upcoming-shows";
@@ -378,352 +377,158 @@ export function TicketDetails() {
           </div>
 
           {/* Desktop Booking Panel */}
-          <div className="bg-neutral-800 h-auto rounded-3xl p-6  lg:top-32 self-start shadow-xl border border-neutral-800/50">
-            <div className="space-y-6">
-              <h1 className="text-xl font-semibold text-neutral-100 leading-7">
-                {ticket.title}
-              </h1>
+          <div className="bg-neutral-800 h-auto rounded-xl p-5 lg:sticky lg:top-32 self-start border border-neutral-800/60">
+            <h1 className="text-xl font-semibold text-white mb-4">
+              Book Tickets
+            </h1>
 
-              <div className="space-y-4 mt-6">
-                {/* Event Selection - only show if multiple events */}
-                <div className="flex items-start gap-3">
-                  <div className="text-[#AEE301]">
-                    <Calendar size={24} strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <p className="text-neutral-400 text-xs font-normal leading-none">
-                      Date
-                    </p>
-                    <Select
-                      value={selectedEventId}
-                      onValueChange={handleEventChange}
+            {/* Dates - horizontal scroll */}
+            <div className="mb-4">
+              <p className="text-xs text-neutral-400 mb-2">Date</p>
+              <div className="flex overflow-x-auto space-x-1.5 pb-1 hide-scrollbar">
+                {ticket?.events?.map((event) => {
+                  const date = new Date(event.date);
+                  return (
+                    <button
+                      key={event.id}
+                      onClick={() => handleEventChange(event.id)}
+                      className={`flex-shrink-0 py-2 px-3 rounded-lg flex flex-col items-center transition-all ${
+                        selectedEventId === event.id
+                          ? "bg-[#e31001] text-white"
+                          : "bg-neutral-900 text-neutral-300 hover:bg-neutral-900"
+                      }`}
                     >
-                      <SelectTrigger className="w-full bg-transparent border-0 p-0 text-white hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none h-auto">
-                        <SelectValue placeholder="Select date">
-                          <div className="flex items-center ">
-                            {selectedEventId && ticket?.events ? (
-                              <span className="text-base leading-snug font-normal text-white">
-                                {formatDate(
-                                  ticket.events
-                                    .find((e) => e.id === selectedEventId)
-                                    ?.date.toString() || ""
-                                )}
-                              </span>
-                            ) : (
-                              <span>Select date</span>
-                            )}
-                          </div>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent
-                        className="bg-neutral-900 border border-neutral-700 text-white max-h-[300px] p-0 rounded-lg shadow-lg"
-                        position="popper"
-                        sideOffset={4}
-                        align="center"
-                      >
-                        <div className="py-2 px-3 border-b border-neutral-700 bg-neutral-800">
-                          <h4 className="text-sm font-medium text-white">
-                            Available Dates
-                          </h4>
-                        </div>
-                        <div className="py-1">
-                          {ticket?.events?.map((event) => (
-                            <SelectItem
-                              key={event.id}
-                              value={event.id}
-                              className="cursor-pointer transition-colors data-[highlighted]:bg-neutral-800 data-[state=checked]:bg-neutral-800 data-[highlighted]:text-white rounded-none px-3 py-2.5"
-                            >
-                              <div className="flex items-center">
-                                {selectedEventId === event.id ? (
-                                  <div className="h-5 w-5 rounded-full border border-red-500 flex items-center justify-center mr-2 flex-shrink-0">
-                                    <div className="h-3 w-3 rounded-full bg-red-500"></div>
-                                  </div>
-                                ) : (
-                                  <div className="h-5 w-5 rounded-full border border-neutral-600 mr-2 flex-shrink-0"></div>
-                                )}
-                                <CalendarDays className="w-4 h-4 mr-2 text-red-500 flex-shrink-0" />
-                                <span>{formatDate(event.date.toString())}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </div>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Showtime Selection - only show if showtimes available */}
-                <div className="flex items-start gap-3">
-                  <div className="text-[#AEE301]">
-                    <Clock size={24} strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <p className="text-neutral-400 text-xs font-normal leading-none">
-                      Time
-                    </p>
-                    <Select
-                      value={selectedShowtimeId}
-                      onValueChange={handleShowtimeChange}
-                    >
-                      <SelectTrigger className="w-full bg-transparent border-0 p-0 text-white hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none h-auto">
-                        <SelectValue placeholder="Select time">
-                          <div className="flex items-center">
-                            {selectedShowtimeId && availableShowtimes ? (
-                              <span className="text-base leading-snug font-normal text-white">
-                                {formatTime(
-                                  availableShowtimes.find(
-                                    (st) => st.id === selectedShowtimeId
-                                  )?.startTime || ""
-                                )}
-                              </span>
-                            ) : (
-                              <span>Select time</span>
-                            )}
-                          </div>
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent
-                        className="bg-neutral-900 border border-neutral-700 text-white max-h-[300px] p-0 rounded-lg shadow-lg"
-                        position="popper"
-                        sideOffset={4}
-                        align="center"
-                      >
-                        <div className="py-2 px-3 border-b border-neutral-700 bg-neutral-800">
-                          <h4 className="text-sm font-medium text-white">
-                            Available Times
-                          </h4>
-                        </div>
-                        <div className="py-1">
-                          {availableShowtimes.map((showtime) => (
-                            <SelectItem
-                              key={showtime.id}
-                              value={showtime.id}
-                              className="cursor-pointer transition-colors data-[highlighted]:bg-neutral-800 data-[state=checked]:bg-neutral-800 data-[highlighted]:text-white rounded-none px-3 py-2.5"
-                            >
-                              <div className="flex items-center">
-                                {selectedShowtimeId === showtime.id ? (
-                                  <div className="h-5 w-5 rounded-full border border-red-500 flex items-center justify-center mr-2 flex-shrink-0">
-                                    <div className="h-3 w-3 rounded-full bg-red-500"></div>
-                                  </div>
-                                ) : (
-                                  <div className="h-5 w-5 rounded-full border border-neutral-600 mr-2 flex-shrink-0"></div>
-                                )}
-                                <Clock3 className="w-4 h-4 mr-2 text-red-500 flex-shrink-0" />
-                                <span>{formatTime(showtime.startTime)}</span>
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </div>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                {/* Venue */}
-                <div className="flex items-start gap-3">
-                  <div className="text-[#AEE301]">
-                    <MapPin size={24} strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <p className="text-neutral-400 text-xs font-normal leading-none">
-                      Venue
-                    </p>
-                    <p className="text-base leading-snug font-normal text-white">
-                      {ticket.venue}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Ticket Quantity Selection */}
-                <div className="flex items-start gap-3">
-                  <div className="text-[#AEE301]">
-                    <TicketIcon size={24} strokeWidth={1.5} />
-                  </div>
-                  <div>
-                    <p className="text-neutral-400 text-xs font-normal leading-none">
-                      Tickets
-                    </p>
-                    <div className="flex gap-3 items-center mt-1">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-6 w-6 bg-neutral-700 border-neutral-600 hover:bg-neutral-600 rounded-full p-0"
-                        onClick={() =>
-                          setSelectedTickets(Math.max(1, selectedTickets - 1))
-                        }
-                        disabled={selectedTickets <= 1}
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <span className="text-base leading-snug font-normal text-white">
-                        {selectedTickets}
+                      <span className="text-xs">
+                        {date.toLocaleDateString("en-US", { weekday: "short" })}
                       </span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-6 w-6 bg-neutral-700 border-neutral-600 hover:bg-neutral-600 rounded-full p-0"
-                        onClick={() =>
-                          setSelectedTickets(Math.min(10, selectedTickets + 1))
-                        }
-                        disabled={selectedTickets >= 10}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                      <span className="text-base font-bold">
+                        {date.getDate()}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
-                {/* Section Selection - simplified but visible */}
-                {availableSections && availableSections.length > 0 && (
-                  <div className="flex items-start gap-3">
-                    <div className="text-[#AEE301]">
-                      <Armchair size={24} strokeWidth={1.5} />
-                    </div>
-                    <div>
-                      <p className="text-neutral-400 text-xs font-normal leading-none">
-                        Section
-                      </p>
-                      <Select
-                        value={selectedSectionId}
-                        onValueChange={setSelectedSectionId}
-                      >
-                        <SelectTrigger className="w-full bg-transparent border-0 p-0 text-white hover:bg-transparent focus:ring-0 focus:ring-offset-0 shadow-none h-auto">
-                          <SelectValue placeholder="Select section">
-                            <div className="flex items-center">
-                              {selectedSectionId && availableSections ? (
-                                <span className="text-base leading-snug font-normal text-white">
-                                  {
-                                    availableSections.find(
-                                      (s) => s.id === selectedSectionId
-                                    )?.name
-                                  }
-                                </span>
-                              ) : (
-                                <span>Select section</span>
-                              )}
-                            </div>
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent
-                          className="bg-neutral-900 border border-neutral-700 text-white max-h-[300px] p-0 rounded-lg shadow-lg"
-                          position="popper"
-                          sideOffset={4}
-                          align="center"
-                        >
-                          <div className="py-2 px-3 border-b border-neutral-700 bg-neutral-800">
-                            <h4 className="text-sm font-medium text-white">
-                              Available Sections
-                            </h4>
-                          </div>
-                          <div className="py-1">
-                            {availableSections.map((section) => (
-                              <SelectItem
-                                key={section.id}
-                                value={section.id}
-                                className="cursor-pointer transition-colors data-[highlighted]:bg-neutral-800 data-[state=checked]:bg-neutral-800 data-[highlighted]:text-white rounded-none px-3 py-2.5"
-                              >
-                                <div className="flex items-center">
-                                  {selectedSectionId === section.id ? (
-                                    <div className="h-5 w-5 rounded-full border border-red-500 flex items-center justify-center mr-2 flex-shrink-0">
-                                      <div className="h-3 w-3 rounded-full bg-red-500"></div>
-                                    </div>
-                                  ) : (
-                                    <div className="h-5 w-5 rounded-full border border-neutral-600 mr-2 flex-shrink-0"></div>
-                                  )}
-                                  <span>{section.name}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </div>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                )}
-
-                {/* Hidden inputs - keeping hidden functionality */}
-                <div className="hidden">
-                  {/* Section Selection - only show if sections available */}
-                  {availableSections && availableSections.length > 0 && (
-                    <div>
-                      <label className="text-sm text-gray-400 mb-1 block">
-                        Select Section
-                      </label>
-                      <Select
-                        value={selectedSectionId}
-                        onValueChange={setSelectedSectionId}
-                      >
-                        <SelectTrigger className="w-full bg-neutral-800 border-neutral-700 text-white">
-                          <SelectValue placeholder="Select section" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableSections.map((section) => (
-                            <SelectItem key={section.id} value={section.id}>
-                              {section.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {/* Number of tickets */}
-                  <div>
-                    <label className="text-sm text-gray-400 mb-1 block">
-                      Number of Tickets
-                    </label>
-                    <Select
-                      value={selectedTickets.toString()}
-                      onValueChange={(value) =>
-                        setSelectedTickets(parseInt(value))
-                      }
+            {/* Times - chips */}
+            <div className="mb-4">
+              <p className="text-xs text-neutral-400 mb-2">Time</p>
+              <div className="flex flex-wrap gap-1.5">
+                {availableShowtimes.map((showtime) => {
+                  const time = new Date(showtime.startTime);
+                  return (
+                    <button
+                      key={showtime.id}
+                      onClick={() => handleShowtimeChange(showtime.id)}
+                      className={`px-3 py-1.5 text-sm rounded-lg ${
+                        selectedShowtimeId === showtime.id
+                          ? "bg-[#e31001] text-white"
+                          : "bg-neutral-900 text-neutral-300 hover:bg-neutral-700"
+                      }`}
                     >
-                      <SelectTrigger className="w-full bg-neutral-800 border-neutral-700 text-white">
-                        <SelectValue placeholder="Select number of tickets" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                          <SelectItem key={num} value={num.toString()}>
-                            {num} {num === 1 ? "ticket" : "tickets"}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      {time.toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Sections - minimal list */}
+            {availableSections && availableSections.length > 0 && (
+              <div className="mb-4">
+                <p className="text-xs text-neutral-400 mb-2">Section</p>
+                <div className="space-y-1.5">
+                  {availableSections.map((section) => (
+                    <button
+                      key={section.id}
+                      onClick={() => setSelectedSectionId(section.id)}
+                      className={` w-full rounded-lg flex justify-between items-center p-2.5 ${
+                        selectedSectionId === section.id
+                          ? "bg-neutral-800 border-l-4 border-l-[#e31001]"
+                          : "bg-neutral-800/50 hover:bg-neutral-800"
+                      }`}
+                    >
+                      <span className="text-sm text-white">{section.name}</span>
+                      <span
+                        className={`text-sm font-medium ${selectedSectionId === section.id ? "text-[#e31001]" : "text-white"}`}
+                      >
+                        ₹{Number(section.priceTier.price).toLocaleString()}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Quantity - simple counter */}
+            <div className="mb-4">
+              <div className="flex justify-between items-center">
+                <p className="text-xs text-neutral-400">Tickets</p>
+                <div className="flex items-center">
+                  <button
+                    onClick={() =>
+                      setSelectedTickets(Math.max(1, selectedTickets - 1))
+                    }
+                    disabled={selectedTickets <= 1}
+                    className="w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-white disabled:opacity-50"
+                  >
+                    <Minus className="w-3 h-3" />
+                  </button>
+                  <span className="text-sm font-medium text-white mx-3">
+                    {selectedTickets}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setSelectedTickets(Math.min(10, selectedTickets + 1))
+                    }
+                    disabled={selectedTickets >= 10}
+                    className="w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-white disabled:opacity-50"
+                  >
+                    <Plus className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Venue - condensed */}
+            <div className="flex items-center text-xs text-neutral-400 mb-4">
+              <MapPin className="text-[#e31001] mr-1.5" size={14} />
+              <span>{ticket.venue}</span>
+            </div>
+
+            {/* Separator */}
+            <div className="h-px bg-neutral-800 mb-4"></div>
+
+            {/* Price and booking */}
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <p className="text-xs text-neutral-400">Total</p>
+                <p className="text-xl font-bold text-white">
+                  ₹
+                  {(
+                    getCurrentSectionPrice().amount * selectedTickets
+                  ).toLocaleString()}
+                </p>
+              </div>
+              <Button
+                type="button"
+                className="bg-[#e31001] hover:bg-[#d31001] text-white px-4 py-2 h-auto rounded-lg"
+                disabled={isCreatingBooking || !selectedSectionId}
+                onClick={handleProceedToPayment}
+              >
+                {isCreatingBooking ? (
+                  <div className="flex items-center">
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    <span>Processing...</span>
                   </div>
-                </div>
-              </div>
-
-              {/* Separator line */}
-              <div className="h-[2px] bg-neutral-700 "></div>
-
-              {/* Price section */}
-              <div className="flex mt-12 justify-between items-center">
-                <div>
-                  <p className="text-sm font-normal leading-tight text-white">
-                    Starts from
-                  </p>
-                  <p className="text-2xl leading-none text-neutral-50 font-bold">
-                    ₹{getCurrentSectionPrice().amount.toLocaleString()} Onwards
-                  </p>
-                </div>
-
-                {/* Button */}
-                <Button
-                  type="button"
-                  className="bg-[#e31001] hover:bg-[#d31001] text-white px-6 py-3 rounded-xl inline-flex justify-center items-center gap-2 overflow-hidden"
-                  disabled={isCreatingBooking || !selectedSectionId}
-                  onClick={handleProceedToPayment}
-                >
-                  {isCreatingBooking ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    "Buy Now"
-                  )}
-                </Button>
-              </div>
+                ) : (
+                  "Buy Now"
+                )}
+              </Button>
             </div>
           </div>
         </div>
@@ -850,7 +655,7 @@ export function TicketDetails() {
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-6 w-6 bg-neutral-700 border-neutral-600 hover:bg-neutral-600 rounded-full p-0"
+                      className="h-6 w-6  bg-neutral-700 border-neutral-600 hover:bg-neutral-600 rounded-full p-0"
                       onClick={() =>
                         setSelectedTickets(Math.max(1, selectedTickets - 1))
                       }
@@ -898,7 +703,7 @@ export function TicketDetails() {
                           : "Select section"}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent className="bg-neutral-900 border-neutral-700">
+                    <SelectContent className=" text-white bg-neutral-700 mt-1 border-neutral-700">
                       {availableSections.map((section) => (
                         <SelectItem key={section.id} value={section.id}>
                           {section.name}
