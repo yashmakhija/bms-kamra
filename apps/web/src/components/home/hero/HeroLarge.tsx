@@ -12,14 +12,16 @@ export function HeroLarge() {
       </div>
 
       <div className="relative z-10 mt-20 lg:left-4 lg:mt-22 xl:left-12 container mx-auto h-full flex items-center">
-        <div className="relative w-full max-w-auto mx-auto px-4">
-          <div className={`${styles.heroText} pt-8 sm:pt-12 md:pt-16 lg:pt-0`}>
-            <span className="sm:leading-3 text-5xl  text-white font-medium lg:leading-10 mb-2 sm:mb-4 md:mb-6">
-              welcome to the
-            </span>
+        <div className="text-center relative w-full max-w-auto mx-auto px-4">
+          <div
+            className={`${styles.heroText} flex flex-col items-center pt-8 sm:pt-12 md:pt-16 lg:pt-0`}
+          >
+            <div className="flex flex-col items-center">
+              <span className="text-5xl text-white font-medium self-start">
+                welcome to the
+              </span>
 
-            <div className="relative ">
-              <h1 className="xl:text-[154px] lg:text-[130px] md:text-[130px] text-[100px] font-black leading-[123.20px] text-white">
+              <h1 className="text-center xl:text-[154px] lg:text-[130px] md:text-[130px] text-[100px] font-black leading-[123.20px] text-white">
                 KUN
                 <span className="relative inline-block">
                   <span
@@ -61,7 +63,7 @@ export function HeroLarge() {
                 </span>
                 MRA
               </h1>
-              <div className="absolute lg:right-10 lg:leading-8 xl:right-30 sm:-bottom-6 xl:leading-6 right-0 text-white text-5xl font-medium">
+              <div className="text-white text-5xl font-medium relative lg:-mt-4 xl:-mt-2 self-end mr-0 lg:mr-0 xl:mr-0">
                 app
               </div>
             </div>
