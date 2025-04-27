@@ -603,7 +603,7 @@ export const cancelBooking = async (id: string, userId: string) => {
  */
 export const processPayment = async (
   bookingId: string,
-  paymentMethod: PaymentMethod,
+  paymentMethod: keyof typeof PaymentMethod,
   paymentId: string
 ) => {
   // Get a distributed lock for this booking to prevent race conditions
@@ -732,7 +732,7 @@ export const getAllBookings = async (options: {
     const where: Prisma.BookingWhereInput = {};
 
     if (status) {
-      where.status = status as BookingStatus;
+      where.status = status as keyof typeof BookingStatus;
     }
 
     if (userId) {

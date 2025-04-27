@@ -8,7 +8,7 @@
     "target": "ES2020",
     "strict": true,
     "moduleResolution": "node",
-    "typeRoots": ["./node_modules/@types", "./src/types"]
+    "typeRoots": ["./node_modules/@types", "./src/types", "./types"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

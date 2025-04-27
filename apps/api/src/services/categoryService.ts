@@ -14,17 +14,17 @@ const logger = createServiceLogger("categoryService");
 const DEFAULT_CATEGORIES = [
   {
     name: "VIP",
-    type: "VIP" as CategoryType,
+    type: "VIP" as keyof typeof CategoryType,
     description: "Premium experience with the best seats and services",
   },
   {
     name: "PREMIUM",
-    type: "PREMIUM" as CategoryType,
+    type: "PREMIUM" as keyof typeof CategoryType,
     description: "Great seats with excellent view and comfort",
   },
   {
     name: "REGULAR",
-    type: "REGULAR" as CategoryType,
+    type: "REGULAR" as keyof typeof CategoryType,
     description: "Standard seating with good view",
   },
 ];
@@ -109,7 +109,7 @@ export const getCategoryById = async (id: string, isActive = true) => {
  * Get categories by type
  */
 export const getCategoriesByType = async (
-  type: CategoryType,
+  type: keyof typeof CategoryType,
   isActive = true
 ) => {
   try {
@@ -130,7 +130,7 @@ export const getCategoriesByType = async (
  * Get default category by type or create if it doesn't exist
  * This should be used instead of creating new categories
  */
-export const getDefaultCategoryByType = async (type: CategoryType) => {
+export const getDefaultCategoryByType = async (type: keyof typeof CategoryType) => {
   try {
     // Find existing category of the specified type
     let category = await prisma.category.findFirst({
@@ -166,7 +166,7 @@ export const getDefaultCategoryByType = async (type: CategoryType) => {
  */
 export const createCategory = async (data: {
   name: string;
-  type: CategoryType;
+  type: keyof typeof  CategoryType;
   description?: string;
 }) => {
   try {
@@ -196,7 +196,7 @@ export const updateCategory = async (
   id: string,
   data: {
     name?: string;
-    type?: CategoryType;
+    type?: keyof typeof CategoryType;
     description?: string;
     isActive?: boolean;
     capacity?: number;
