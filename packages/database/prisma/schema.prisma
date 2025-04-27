@@ -9,24 +9,23 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String       @id @default(cuid())
   name          String?
-  email         String?   @unique
+  email         String?      @unique
   emailVerified DateTime?
   password      String?
-  phone         String?   @unique
-  phoneVerified Boolean   @default(false)
+  phone         String?      @unique
+  phoneVerified Boolean      @default(false)
   image         String?
-  isAdmin       Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  accounts     Account[]
-  sessions     Session[]
-  otpCodes     OtpCode[]
-  admin        Admin?
-  bookings     Booking[]
-  ticketLocks  TicketLock[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  isAdmin       Boolean      @default(false)
+  accounts      Account[]
+  admin         Admin?
+  bookings      Booking[]
+  otpCodes      OtpCode[]
+  sessions      Session[]
+  ticketLocks   TicketLock[]
 
   @@map("users")
 }
@@ -37,17 +36,16 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String?  @db.Text
-  access_token      String?  @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String?  @db.Text
+  id_token          String?
   session_state     String?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -60,8 +58,7 @@ model Session {
   expires      DateTime
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
@@ -74,81 +71,195 @@ model OtpCode {
   expiresAt DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("otp_codes")
-} 
+}
 
 model Admin {
-  id        String   @id @default(cuid())
-  userId    String   @unique
+  id        String    @id @default(cuid())
+  userId    String    @unique
   role      AdminRole @default(EDITOR)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admins")
+}
+
+model Venue {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  city        String
+  country     String
+  capacity    Int
+  description String?
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  shows       Show[]
+
+  @@map("venues")
+}
+
+model Show {
+  id           String      @id @default(cuid())
+  title        String
+  subtitle     String?
+  description  String?
+  imageUrl     String?
+  thumbnailUrl String?
+  duration     Int
+  ageLimit     String?
+  language     String?
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  venueId      String
+  events       Event[]
+  priceTiers   PriceTier[]
+  venue        Venue       @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@map("shows")
+}
+
+model Category {
+  id          String       @id @default(cuid())
+  name        String
+  type        CategoryType
+  description String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  priceTiers  PriceTier[]
+
+  @@map("categories")
+}
+
+model PriceTier {
+  id           String        @id @default(cuid())
+  capacity     Int
+  price        Decimal       @db.Decimal(10, 2)
+  currency     String        @default("INR")
+  description  String?
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  showId       String
+  categoryId   String
+  category     Category      @relation(fields: [categoryId], references: [id])
+  show         Show          @relation(fields: [showId], references: [id], onDelete: Cascade)
+  seatSections SeatSection[]
+
+  @@unique([showId, categoryId])
+  @@map("price_tiers")
+}
+
+model Event {
+  id        String     @id @default(cuid())
+  date      DateTime
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  showId    String
+  show      Show       @relation(fields: [showId], references: [id], onDelete: Cascade)
+  showtimes Showtime[]
+
+  @@map("events")
+}
+
+model Showtime {
+  id           String        @id @default(cuid())
+  startTime    DateTime
+  endTime      DateTime
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  eventId      String
+  seatSections SeatSection[]
+  event        Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@map("showtimes")
+}
+
+model SeatSection {
+  id             String    @id @default(cuid())
+  name           String
+  availableSeats Int
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  showtimeId     String
+  priceTierId    String
+  priceTier      PriceTier @relation(fields: [priceTierId], references: [id])
+  showtime       Showtime  @relation(fields: [showtimeId], references: [id], onDelete: Cascade)
+  tickets        Ticket[]
+
+  @@map("seat_sections")
+}
+
+model Ticket {
+  id         String       @id @default(cuid())
+  seatNumber String?
+  code       String       @unique
+  status     TicketStatus @default(AVAILABLE)
+  price      Decimal      @db.Decimal(10, 2)
+  currency   String       @default("USD")
+  isActive   Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  sectionId  String
+  ticketLock TicketLock?
+  section    SeatSection  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  bookings   Booking[]    @relation("BookingToTicket")
+
+  @@index([status])
+  @@map("tickets")
+}
+
+model TicketLock {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+  ticketId  String   @unique
+  userId    String
+  ticket    Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("admins")
+
+  @@index([expiresAt])
+  @@map("ticket_locks")
+}
+
+model Booking {
+  id            String         @id @default(cuid())
+  status        BookingStatus  @default(PENDING)
+  totalAmount   Decimal        @db.Decimal(10, 2)
+  currency      String         @default("USD")
+  paymentMethod PaymentMethod?
+  paymentId     String?
+  paymentDate   DateTime?
+  refundId      String?        // Store external refund reference ID
+  refundDate    DateTime?      // When refund was processed
+  refundReason  String?        // Reason for refund
+  refundedBy    String?        // Admin/user who initiated refund
+  expiresAt     DateTime
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  userId        String
+  metadata      Json?          @default("{}")
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tickets       Ticket[]       @relation("BookingToTicket")
+
+  @@index([status, expiresAt])
+  @@map("bookings")
 }
 
 enum AdminRole {
   SUPER_ADMIN
   EDITOR
-}
-
-model Venue {
-  id           String   @id @default(cuid())
-  name         String
-  address      String
-  city         String
-  country      String
-  capacity     Int
-  description  String?  @db.Text
-  imageUrl     String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  shows        Show[]
-  
-  @@map("venues")
-}
-
-model Show {
-  id           String   @id @default(cuid())
-  title        String
-  subtitle     String?
-  description  String?  @db.Text
-  imageUrl     String?
-  thumbnailUrl String?
-  duration     Int      // Duration in minutes
-  ageLimit     String?
-  language     String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  venueId      String
-  venue        Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
-  events       Event[]
-  priceTiers   PriceTier[]
-  
-  @@map("shows")
-}
-
-model Category {
-  id           String       @id @default(cuid())
-  name         String
-  type         CategoryType
-  description  String?
-  isActive     Boolean      @default(true)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  
-  priceTiers   PriceTier[]
-  
-  @@map("categories")
 }
 
 enum CategoryType {
@@ -158,135 +269,12 @@ enum CategoryType {
   ECONOMY
 }
 
-// New model to handle price tiers with capacity and pricing for each category
-model PriceTier {
-  id           String   @id @default(cuid())
-  capacity     Int      // Total number of seats in this tier
-  price        Decimal  @db.Decimal(10, 2)
-  currency     String   @default("INR")
-  description  String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  showId       String
-  show         Show     @relation(fields: [showId], references: [id], onDelete: Cascade)
-  categoryId   String
-  category     Category @relation(fields: [categoryId], references: [id])
-  seatSections SeatSection[]
-  
-  @@unique([showId, categoryId]) // Each show-category combination can only have one price tier
-  @@map("price_tiers")
-}
-
-model Event {
-  id           String   @id @default(cuid())
-  date         DateTime
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  showId       String
-  show         Show     @relation(fields: [showId], references: [id], onDelete: Cascade)
-  showtimes    Showtime[]
-  
-  @@map("events")
-}
-
-model Showtime {
-  id           String   @id @default(cuid())
-  startTime    DateTime
-  endTime      DateTime
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  eventId      String
-  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  seatSections SeatSection[]
-  
-  @@map("showtimes")
-}
-
-model SeatSection {
-  id             String   @id @default(cuid())
-  name           String
-  availableSeats Int      // Current available seats (changes as tickets are sold)
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  
-  priceTierId    String
-  priceTier      PriceTier @relation(fields: [priceTierId], references: [id])
-  showtimeId     String
-  showtime       Showtime  @relation(fields: [showtimeId], references: [id], onDelete: Cascade)
-  tickets        Ticket[]
-  
-  @@map("seat_sections")
-}
-
-model Ticket {
-  id           String       @id @default(cuid())
-  seatNumber   String?      // Seat number if applicable
-  code         String       @unique // QR/Barcode for the ticket
-  status       TicketStatus @default(AVAILABLE)
-  price        Decimal      @db.Decimal(10, 2)
-  currency     String       @default("USD")
-  isActive     Boolean      @default(true)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  
-  sectionId    String
-  section      SeatSection  @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  bookings     Booking[]
-  ticketLock   TicketLock?
-  
-  @@index([status])
-  @@map("tickets")
-}
-
 enum TicketStatus {
   AVAILABLE
   LOCKED
   RESERVED
   SOLD
   CANCELED
-}
-
-// Handles race conditions by locking tickets
-model TicketLock {
-  id           String   @id @default(cuid())
-  expiresAt    DateTime
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
-  ticketId     String   @unique
-  ticket       Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@index([expiresAt])
-  @@map("ticket_locks")
-}
-
-model Booking {
-  id             String         @id @default(cuid())
-  status         BookingStatus  @default(PENDING)
-  totalAmount    Decimal        @db.Decimal(10, 2)
-  currency       String         @default("USD")
-  paymentMethod  PaymentMethod?
-  paymentId      String?        // External payment reference ID
-  paymentDate    DateTime?
-  expiresAt      DateTime       // When the booking expires if not paid
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  
-  userId         String
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tickets        Ticket[]
-  
-  @@index([status, expiresAt])
-  @@map("bookings")
 }
 
 enum BookingStatus {

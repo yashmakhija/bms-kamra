@@ -13,9 +13,26 @@ export const prisma =
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
-// Export all types from Prisma Client
+// Export all types from Prisma Client, except for the enums we're exporting as values
 export * from ".prisma/client";
 
+// Import and re-export enum values
+import {
+  BookingStatus as PrismaBookingStatus,
+  PaymentMethod as PrismaPaymentMethod,
+  TicketStatus as PrismaTicketStatus,
+  CategoryType as PrismaCategoryType,
+  AdminRole as PrismaAdminRole,
+} from ".prisma/client";
+
+// Export enums as concrete values
+export const BookingStatus = PrismaBookingStatus;
+export const PaymentMethod = PrismaPaymentMethod;
+export const TicketStatus = PrismaTicketStatus;
+export const CategoryType = PrismaCategoryType;
+export const AdminRole = PrismaAdminRole;
+
+// Export the rest as types
 export type {
   User,
   Admin,
@@ -31,9 +48,4 @@ export type {
   Ticket,
   TicketLock,
   Booking,
-  AdminRole,
-  CategoryType,
-  TicketStatus,
-  BookingStatus,
-  PaymentMethod,
 } from ".prisma/client";
