@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { cn } from "@repo/ui/utils";
-import { ArrowRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { Button } from "@repo/ui/components/ui/button";
 import { create } from "zustand";
 import { Article, articles as mockArticles } from "../../data/articles";
@@ -32,19 +32,25 @@ const useArticleStore = create<ArticleState>((set) => ({
 
 function ArticleCard({ article }: { article: Article }) {
   return (
-    <div className="bg-neutral-800 rounded-xl p-6 mb-6">
-      <h3 className="text-xl text-white font-medium mb-1">{article.title}</h3>
-      <p className="text-neutral-400 text-sm mb-3">{article.date}</p>
-      <p className="text-neutral-300 text-base mb-4 line-clamp-2">
+    <div className="group cursor-pointer bg-[#1D1D1D] rounded-[32px] w-full lg:w-[611.74px] p-6 flex flex-col gap-6">
+      {/* Title */}
+      <h3 className="text-2xl text-white font-medium leading-loose">
+        {article.title}
+        <p className="text-sm font-medium leading-tight text-[#f1f1f1]">
+          {article.date}
+        </p>
+      </h3>
+
+      {/* Description */}
+      <p className="self-stretch justify-center text-[#f1f1f1]/50 text-base font-normal leading-snug">
         {article.excerpt}
       </p>
-      <div className="flex justify-end">
-        <a
-          href="#"
-          className="inline-flex items-center justify-center bg-[#e31001] hover:bg-[#D00000] text-white text-sm font-medium rounded-lg px-7 py-2.5"
-        >
-          Read
-        </a>
+
+      {/* Arrow Button */}
+      <div className="self-end mt-auto">
+        <div className="bg-[#F2F900] w-14 h-14 rounded-full flex items-center justify-center cursor-pointer hover:bg-[#F2F900]/90 transition-colors">
+          <ArrowUpRight className="w-7 h-7 text-black" />
+        </div>
       </div>
     </div>
   );
@@ -70,22 +76,22 @@ export function RecentArticles({
   }, [initialArticles, fetchArticles]);
 
   return (
-    <section className={cn("w-full py-12 bg-[#171717]", className)}>
+    <section className={cn("w-full py-8 md:py-12 bg-[#111111]", className)}>
       <div className="container mx-auto px-4 md:px-8 lg:px-30">
-        <div className="flex justify-between items-center mb-8">
-          <div className="text-white text-3xl font-bold leading-10">
-            Recent Articles
+        <div className="flex justify-between items-center mb-8 md:mb-12">
+          <div className="text-[#F2F900] text-3xl md:text-[40px] font-bold">
+            Articles
           </div>
 
           <div className="hidden md:block">
-            <Button className="bg-neutral-50 cursor-pointer text-neutral-900 text-sm leading-none font-medium rounded-xl gap-2 overflow-hidden min-w-[110px] h-[40px] px-6 py-4">
+            <Button className="bg-white hover:bg-white/90 text-black text-sm font-medium rounded-full px-6 h-10">
               Browse all
             </Button>
           </div>
 
           <div className="md:hidden">
-            <Button className="bg-neutral-50 text-neutral-900 rounded-xl w-12 h-12 p-0 flex items-center justify-center">
-              <ArrowRight size={20} />
+            <Button className="bg-white hover:bg-white/90 text-black rounded-full w-10 h-10 p-0 flex items-center justify-center">
+              <ArrowUpRight size={18} />
             </Button>
           </div>
         </div>
@@ -97,13 +103,18 @@ export function RecentArticles({
             </div>
           </div>
         ) : error ? (
-          <div className="bg-neutral-800 rounded-xl p-6 text-center text-red-500">
+          <div className="bg-[#1D1D1D] rounded-[32px] p-6 text-center text-red-500">
             {error}
           </div>
         ) : (
-          <div className="flex flex-col gap-6 max-w-8xl ">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {articles.map((article) => (
-              <ArticleCard key={article.id} article={article} />
+              <div
+                key={article.id}
+                className="flex justify-center lg:justify-start"
+              >
+                <ArticleCard article={article} />
+              </div>
             ))}
           </div>
         )}

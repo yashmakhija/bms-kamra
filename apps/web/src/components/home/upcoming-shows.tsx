@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Loader2,
   ArrowRight,
+  ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@repo/ui/utils";
 import { useNavigate } from "react-router-dom";
@@ -48,81 +49,69 @@ interface ShowCardProps {
 function ShowCard({ show, onClick, isSelected, isLoading }: ShowCardProps) {
   const handleBookNow = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Navigate to booking page
     window.location.href = `/shows/${show.id}`;
   };
 
   return (
-    <div className="bg-neutral-800 rounded-[20px] p-6 text-white w-90 h-105 aspect-[1/1.4] flex flex-col">
-      <div className="h-[4.5rem] flex items-start">
-        <h2 className="text-lg text-white font-bold line-clamp-3 leading-tight">
+    <div className="bg-[#1D1D1D] rounded-[32px] p-6 text-white flex flex-col">
+      {/* Title and Description */}
+      <div className="space-y-3 mb-8">
+        <h2 className="text-[28px] font-semibold text-white leading-tight">
           {show.title}
         </h2>
+        <p className="text-neutral-400 text-lg leading-relaxed line-clamp-2">
+          Watch Kunal perform at Dubai's biggest venue. This comic special...
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-y-5 flex-grow mt-3">
-        <InfoItem
-          icon={<Calendar size={20} strokeWidth={1.5} />}
-          label="Date"
-          value={show.date}
-        />
-        <InfoItem
-          icon={<Timer size={20} strokeWidth={1.5} />}
-          label="Duration"
-          value={show.duration}
-        />
-        <InfoItem
-          icon={<Clock size={20} strokeWidth={1.5} />}
-          label="Time"
-          value={show.time}
-        />
-        <InfoItem
-          icon={<MapPin size={20} strokeWidth={1.5} />}
-          label="Venue"
-          value={show.venue}
-        />
+      {/* Event Details - Vertical Stack */}
+      <div className="space-y-5">
+        <div className="flex items-center gap-4">
+          <div className="text-[#F2F900]">
+            <Calendar size={24} strokeWidth={1.5} />
+          </div>
+          <p className="text-[18px] text-white">{show.date}</p>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="text-[#F2F900]">
+            <Timer size={24} strokeWidth={1.5} />
+          </div>
+          <p className="text-[18px] text-white">{show.duration}</p>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="text-[#F2F900]">
+            <Clock size={24} strokeWidth={1.5} />
+          </div>
+          <p className="text-[18px] text-white">{show.time}</p>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="text-[#F2F900]">
+            <MapPin size={24} strokeWidth={1.5} />
+          </div>
+          <p className="text-[18px] text-white">{show.venue}</p>
+        </div>
       </div>
 
-      {/* Dotted line separator - fixed position */}
-      <div className="h-[30px] mt-5 mb-4 relative">
-        <div className="absolute top-1/2 -translate-y-1/2 left-[-24px] right-[-24px] h-1 flex items-center">
-          {/* Left Edge Circle */}
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-[#171717] rounded-full z-10" />
-
-          {/* Dotted Line */}
-          <div className="w-full flex justify-between items-center px-6">
-            {Array.from({ length: 14 }).map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "h-[2.5px] rounded-full bg-neutral-900",
-                  i % 3 === 1 ? "w-4" : "w-2"
-                )}
-              />
-            ))}
+      {/* Price and Action Section */}
+      <div className="mt-auto pt-6">
+        <div className="bg-[#2E2E2E] rounded-2xl p-4 flex items-center justify-between">
+          <div>
+            <p className="text-[#F2F900] text-2xl font-bold">
+              ₹{show.price.amount.toLocaleString()}
+            </p>
+            <p className="text-[#F1F1F1] text-sm">onwards</p>
           </div>
 
-          {/* Right Edge Circle */}
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3.5 h-3.5 bg-[#171717] rounded-full z-10" />
+          <button
+            onClick={handleBookNow}
+            className="bg-[#F2F900] cursor-pointer w-12 h-12 rounded-full flex items-center justify-center transition-colors"
+          >
+            <ArrowUpRight className="w-6 h-6 text-black" />
+          </button>
         </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col">
-          <p className="text-2xl text-neutral-50 font-bold leading-normal">
-            ₹{show.price.amount.toLocaleString()}
-          </p>
-          <p className="text-[10px] font-normal text-neutral-400 leading-3">
-            onwards
-          </p>
-        </div>
-
-        <Button
-          onClick={handleBookNow}
-          className="inline-flex cursor-pointer items-center justify-center bg-[#e31001] hover:bg-[#D00000] text-neutral-50 text-sm leading-none font-medium rounded-xl gap-2 overflow-hidden min-w-[110px] h-[40px] px-6 py-3"
-        >
-          Book Now
-        </Button>
       </div>
     </div>
   );
@@ -248,17 +237,24 @@ export function UpcomingShows({
   }
 
   return (
-    <section className={cn("w-full bg-[#171717]", className)}>
+    <section className={cn("w-full bg-[#111111]", className)}>
       <div className="container mx-auto px-4 md:px-8 lg:px-30">
         <div className="flex justify-between items-center mb-8">
-          <div className="text-white text-3xl font-bold leading-10">
+          <div
+            className={cn(
+              "font-bold leading-10",
+              title === "Tickets" || title === "Similar Shows"
+                ? "text-[#F2F900] text-[40px]"
+                : "text-white text-3xl"
+            )}
+          >
             {title}
           </div>
 
           {/* Only show browse all button when removeButton is false */}
           {!removeButton && (
             <div className="hidden md:block">
-              <Button className="bg-neutral-50 text-neutral-900 text-sm leading-none font-medium rounded-xl gap-2 overflow-hidden min-w-[110px] h-[40px] px-6 py-4">
+              <Button className="bg-neutral-50 text-neutral-900 text-sm leading-none font-medium rounded-full gap-2 overflow-hidden min-w-[110px] h-[40px] px-6 py-4">
                 <a href="/tickets">Browse all</a>
               </Button>
             </div>
@@ -312,9 +308,9 @@ export function UpcomingShows({
           </div>
         </div>
 
-        {/* Desktop View: 3-Column Grid */}
+        {/* Desktop View: Grid */}
         <div className="hidden xl:block">
-          <div className="grid grid-cols-3 gap-19">
+          <div className="grid grid-cols-3 gap-6">
             {limitedShows.map((show) => (
               <ShowCard
                 key={show.id}

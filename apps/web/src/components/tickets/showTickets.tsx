@@ -11,6 +11,7 @@ import {
   Loader2,
   ArrowRight,
   ChevronDown,
+  ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@repo/ui/utils";
 import { useNavigate } from "react-router-dom";
@@ -55,81 +56,69 @@ interface ShowCardProps {
 function ShowCard({ show, onClick, isSelected, isLoading }: ShowCardProps) {
   const handleBookNow = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Navigate to booking page
     window.location.href = `/shows/${show.id}`;
   };
 
   return (
-    <div className="bg-neutral-800 rounded-[20px] p-6 text-white w-90 h-105 aspect-[1/1.4] flex flex-col">
-      <div className="h-[4.5rem] flex items-start">
-        <h2 className="text-lg text-white font-bold line-clamp-3 leading-tight">
+    <div className="group cursor-pointer w-full bg-[#1D1D1D] rounded-[32px] p-6 text-white flex flex-col">
+      {/* Title and Description */}
+      <div className="space-y-3 mb-8">
+        <h2 className="text-[28px] font-semibold text-white leading-tight">
           {show.title}
         </h2>
+        <p className="text-neutral-400 text-lg leading-relaxed line-clamp-2">
+          Watch Kunal perform at Dubai's biggest venue. This comic special...
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-y-5 flex-grow mt-3">
-        <InfoItem
-          icon={<Calendar size={20} strokeWidth={1.5} />}
-          label="Date"
-          value={show.date}
-        />
-        <InfoItem
-          icon={<Timer size={20} strokeWidth={1.5} />}
-          label="Duration"
-          value={show.duration}
-        />
-        <InfoItem
-          icon={<Clock size={20} strokeWidth={1.5} />}
-          label="Time"
-          value={show.time}
-        />
-        <InfoItem
-          icon={<MapPin size={20} strokeWidth={1.5} />}
-          label="Venue"
-          value={show.venue}
-        />
+      {/* Event Details - Vertical Stack */}
+      <div className="space-y-5">
+        <div className="flex items-center gap-4">
+          <div className="text-[#F2F900]">
+            <Calendar size={24} strokeWidth={1.5} />
+          </div>
+          <p className="text-[18px] text-white">{show.date}</p>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="text-[#F2F900]">
+            <Timer size={24} strokeWidth={1.5} />
+          </div>
+          <p className="text-[18px] text-white">{show.duration}</p>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="text-[#F2F900]">
+            <Clock size={24} strokeWidth={1.5} />
+          </div>
+          <p className="text-[18px] text-white">{show.time}</p>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="text-[#F2F900]">
+            <MapPin size={24} strokeWidth={1.5} />
+          </div>
+          <p className="text-[18px] text-white">{show.venue}</p>
+        </div>
       </div>
 
-      {/* Dotted line separator - fixed position */}
-      <div className="h-[30px] mt-5 mb-4 relative">
-        <div className="absolute top-1/2 -translate-y-1/2 left-[-24px] right-[-24px] h-1 flex items-center">
-          {/* Left Edge Circle */}
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-[#171717] rounded-full z-10" />
-
-          {/* Dotted Line */}
-          <div className="w-full flex justify-between items-center px-6">
-            {Array.from({ length: 14 }).map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "h-[2.5px] rounded-full bg-neutral-900",
-                  i % 3 === 1 ? "w-4" : "w-2"
-                )}
-              />
-            ))}
+      {/* Price and Action Section */}
+      <div className="mt-auto pt-6">
+        <div className="bg-[#2E2E2E] rounded-2xl p-4 flex items-center justify-between">
+          <div>
+            <p className="text-[#F2F900] text-2xl font-bold">
+              ₹{show.price.amount.toLocaleString()}
+            </p>
+            <p className="text-[#F1F1F1] text-sm">onwards</p>
           </div>
 
-          {/* Right Edge Circle */}
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3.5 h-3.5 bg-[#171717] rounded-full z-10" />
+          <button
+            onClick={handleBookNow}
+            className="bg-[#F2F900] cursor-pointer w-12 h-12 rounded-full flex items-center justify-center transition-colors hover:bg-[#F2F900]/90"
+          >
+            <ArrowUpRight className="w-6 h-6 text-black" />
+          </button>
         </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col">
-          <p className="text-2xl text-neutral-50 font-bold leading-normal">
-            ₹{show.price.amount.toLocaleString()}
-          </p>
-          <p className="text-[10px] font-normal text-neutral-400 leading-3">
-            onwards
-          </p>
-        </div>
-
-        <Button
-          onClick={handleBookNow}
-          className="inline-flex cursor-pointer items-center justify-center bg-[#e31001] hover:bg-[#D00000] text-neutral-50 text-sm leading-none font-medium rounded-xl gap-2 overflow-hidden min-w-[110px] h-[40px] px-6 py-3"
-        >
-          Book Now
-        </Button>
       </div>
     </div>
   );
@@ -299,52 +288,34 @@ export function ShowTickets({ shows: propShows, className }: ShowTicketsProps) {
   }
 
   return (
-    <section className={cn("w-full bg-[#171717]", className)}>
+    <section className={cn("w-full bg-[#111111]", className)}>
       <div className="container mx-auto px-4 md:px-8 lg:px-30">
         {/* Filter Section */}
         <div className="mb-8 mt-8">
           {/* Small Screen: Horizontal Scrollable Filters */}
-          <div
-            className="flex md:hidden overflow-x-auto gap-4 pb-2 snap-x snap-mandatory"
-            style={{
-              scrollbarWidth: "none",
-              direction: "rtl", // Right to left scrolling
-            }}
-          >
-            <div
-              className="flex-shrink-0 min-w-[260px] snap-start"
-              style={{ direction: "ltr" }}
-            >
+          <div className="flex md:hidden overflow-x-auto gap-4 pb-4 snap-x snap-mandatory no-scrollbar">
+            <div className="flex-shrink-0 min-w-[260px] snap-start">
               <FilterButton
                 label="Date"
                 options={dateOptions}
                 onSelect={setSelectedDate}
               />
             </div>
-            <div
-              className="flex-shrink-0 min-w-[260px] snap-start"
-              style={{ direction: "ltr" }}
-            >
+            <div className="flex-shrink-0 min-w-[260px] snap-start">
               <FilterButton
                 label="Duration"
                 options={durationOptions}
                 onSelect={setSelectedDuration}
               />
             </div>
-            <div
-              className="flex-shrink-0 min-w-[260px] snap-start"
-              style={{ direction: "ltr" }}
-            >
+            <div className="flex-shrink-0 min-w-[260px] snap-start">
               <FilterButton
                 label="Location"
                 options={locationOptions}
                 onSelect={setSelectedLocation}
               />
             </div>
-            <div
-              className="flex-shrink-0 min-w-[260px] snap-start"
-              style={{ direction: "ltr" }}
-            >
+            <div className="flex-shrink-0 min-w-[260px] snap-start">
               <FilterButton
                 label="Price"
                 options={priceOptions}
@@ -378,20 +349,48 @@ export function ShowTickets({ shows: propShows, className }: ShowTicketsProps) {
           </div>
         </div>
 
-        {/* Mobile, Tablet & Desktop Views: Responsive Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-1 md:gap-12 lg:gap-22">
-          {shows.map((show) => (
-            <div
-              key={show.id}
-              className="w-full max-w-[420px] mx-auto md:max-w-none mb-12"
-            >
+        {/* Mobile & Tablet View: Horizontal Scrolling */}
+        <div className="xl:hidden">
+          <div
+            className="flex gap-6 overflow-x-auto pb-6 snap-x snap-mandatory no-scrollbar"
+            style={{
+              scrollbarWidth: "none",
+              msOverflowStyle: "none",
+              WebkitOverflowScrolling: "touch",
+            }}
+          >
+            {shows.map((show) => (
+              <div
+                key={show.id}
+                className="flex-shrink-0 snap-start snap-always"
+                style={{
+                  width: "calc(100vw - 100px)",
+                  maxWidth: "360px",
+                  minWidth: "300px",
+                }}
+              >
+                <ShowCard
+                  show={show}
+                  isSelected={selectedShowId === show.id}
+                  isLoading={isLoading && selectedShowId === show.id}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Desktop View: Grid */}
+        <div className="hidden xl:block">
+          <div className="grid grid-cols-3 mb-8 gap-6">
+            {shows.map((show) => (
               <ShowCard
+                key={show.id}
                 show={show}
                 isSelected={selectedShowId === show.id}
                 isLoading={isLoading && selectedShowId === show.id}
               />
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>

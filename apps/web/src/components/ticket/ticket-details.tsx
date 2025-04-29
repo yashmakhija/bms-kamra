@@ -291,7 +291,7 @@ export function TicketDetails() {
   }
 
   return (
-    <div className="bg-neutral-900 pt-24 px-4 md:px-10 py-12 min-h-screen text-white">
+    <div className="bg-[#111] pt-24 px-4 md:px-10 py-12 min-h-screen text-white">
       {/* Auth modal - placed at the top level of the component */}
       <SimpleAuthModal
         className="text-black"
@@ -377,31 +377,33 @@ export function TicketDetails() {
           </div>
 
           {/* Desktop Booking Panel */}
-          <div className="bg-neutral-800 h-auto rounded-xl p-5 lg:sticky lg:top-32 self-start border border-neutral-800/60">
-            <h1 className="text-xl font-semibold text-white mb-4">
+          <div className="bg-[#1D1D1D] rounded-[32px] p-6 lg:sticky lg:top-32 self-start">
+            <h1 className="text-[28px] font-semibold text-white mb-6">
               Book Tickets
             </h1>
 
             {/* Dates - horizontal scroll */}
-            <div className="mb-4">
-              <p className="text-xs text-neutral-400 mb-2">Date</p>
-              <div className="flex overflow-x-auto space-x-1.5 pb-1 hide-scrollbar">
+            <div className="mb-6">
+              <p className="text-[#F1F1F1]/60 text-sm mb-3">
+                Select Date & Time
+              </p>
+              <div className="flex overflow-x-auto space-x-2 pb-2 no-scrollbar">
                 {ticket?.events?.map((event) => {
                   const date = new Date(event.date);
                   return (
                     <button
                       key={event.id}
                       onClick={() => handleEventChange(event.id)}
-                      className={`flex-shrink-0 py-2 px-3 rounded-lg flex flex-col items-center transition-all ${
+                      className={`flex-shrink-0 py-2 px-3 rounded-xl flex flex-col items-center transition-all ${
                         selectedEventId === event.id
-                          ? "bg-[#e31001] text-white"
-                          : "bg-neutral-900 text-neutral-300 hover:bg-neutral-900"
+                          ? "bg-[#F2F900] text-black"
+                          : "bg-[#2E2E2E] text-white hover:bg-[#2E2E2E]/80"
                       }`}
                     >
-                      <span className="text-xs">
+                      <span className="text-sm font-medium">
                         {date.toLocaleDateString("en-US", { weekday: "short" })}
                       </span>
-                      <span className="text-base font-bold">
+                      <span className="text-lg font-bold mt-0.5">
                         {date.getDate()}
                       </span>
                     </button>
@@ -410,20 +412,19 @@ export function TicketDetails() {
               </div>
             </div>
 
-            {/* Times - chips */}
-            <div className="mb-4">
-              <p className="text-xs text-neutral-400 mb-2">Time</p>
-              <div className="flex flex-wrap gap-1.5">
+            {/* Times - chips in a row */}
+            <div className="mb-6">
+              <div className="flex flex-wrap gap-2">
                 {availableShowtimes.map((showtime) => {
                   const time = new Date(showtime.startTime);
                   return (
                     <button
                       key={showtime.id}
                       onClick={() => handleShowtimeChange(showtime.id)}
-                      className={`px-3 py-1.5 text-sm rounded-lg ${
+                      className={`px-3 py-2 text-sm font-medium rounded-xl transition-all ${
                         selectedShowtimeId === showtime.id
-                          ? "bg-[#e31001] text-white"
-                          : "bg-neutral-900 text-neutral-300 hover:bg-neutral-700"
+                          ? "bg-[#F2F900] text-black"
+                          : "bg-[#2E2E2E] text-white hover:bg-[#2E2E2E]/80"
                       }`}
                     >
                       {time.toLocaleTimeString("en-US", {
@@ -437,99 +438,107 @@ export function TicketDetails() {
               </div>
             </div>
 
-            {/* Sections - minimal list */}
+            {/* Sections with integrated quantity */}
             {availableSections && availableSections.length > 0 && (
-              <div className="mb-4">
-                <p className="text-xs text-neutral-400 mb-2">Section</p>
-                <div className="space-y-1.5">
+              <div className="mb-6">
+                <p className="text-[#F1F1F1]/60 text-sm mb-3">
+                  Select Section & Quantity
+                </p>
+                <div className="space-y-2">
                   {availableSections.map((section) => (
-                    <button
+                    <div
                       key={section.id}
-                      onClick={() => setSelectedSectionId(section.id)}
-                      className={` w-full rounded-lg flex justify-between items-center p-2.5 ${
+                      className={`w-full rounded-xl bg-[#2E2E2E] p-3 ${
                         selectedSectionId === section.id
-                          ? "bg-neutral-800 border-l-4 border-l-[#e31001]"
-                          : "bg-neutral-800/50 hover:bg-neutral-800"
+                          ? "border-l-4 border-l-[#F2F900]"
+                          : ""
                       }`}
                     >
-                      <span className="text-sm text-white">{section.name}</span>
-                      <span
-                        className={`text-sm font-medium ${selectedSectionId === section.id ? "text-[#e31001]" : "text-white"}`}
+                      <button
+                        onClick={() => setSelectedSectionId(section.id)}
+                        className="w-full flex justify-between items-center mb-2"
                       >
-                        ₹{Number(section.priceTier.price).toLocaleString()}
-                      </span>
-                    </button>
+                        <span className="text-base text-white">
+                          {section.name}
+                        </span>
+                        <span
+                          className={`text-base font-bold ${
+                            selectedSectionId === section.id
+                              ? "text-[#F2F900]"
+                              : "text-white"
+                          }`}
+                        >
+                          ₹{Number(section.priceTier.price).toLocaleString()}
+                        </span>
+                      </button>
+                      {selectedSectionId === section.id && (
+                        <div className="flex items-center justify-between pt-2 border-t border-[#1D1D1D]">
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={() =>
+                                setSelectedTickets(
+                                  Math.max(1, selectedTickets - 1)
+                                )
+                              }
+                              disabled={selectedTickets <= 1}
+                              className="w-8 h-8 rounded-full bg-[#1D1D1D] flex items-center justify-center text-white disabled:opacity-50"
+                            >
+                              <Minus className="w-4 h-4" />
+                            </button>
+                            <span className="text-base font-medium text-white min-w-[20px] text-center">
+                              {selectedTickets}
+                            </span>
+                            <button
+                              onClick={() =>
+                                setSelectedTickets(
+                                  Math.min(10, selectedTickets + 1)
+                                )
+                              }
+                              disabled={selectedTickets >= 10}
+                              className="w-8 h-8 rounded-full bg-[#1D1D1D] flex items-center justify-center text-white disabled:opacity-50"
+                            >
+                              <Plus className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[#F1F1F1]/60 text-xs">Total</p>
+                            <p className="text-[#F2F900] text-base font-bold">
+                              ₹
+                              {(
+                                section.priceTier.price * selectedTickets
+                              ).toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Quantity - simple counter */}
-            <div className="mb-4">
-              <div className="flex justify-between items-center">
-                <p className="text-xs text-neutral-400">Tickets</p>
-                <div className="flex items-center">
-                  <button
-                    onClick={() =>
-                      setSelectedTickets(Math.max(1, selectedTickets - 1))
-                    }
-                    disabled={selectedTickets <= 1}
-                    className="w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-white disabled:opacity-50"
-                  >
-                    <Minus className="w-3 h-3" />
-                  </button>
-                  <span className="text-sm font-medium text-white mx-3">
-                    {selectedTickets}
-                  </span>
-                  <button
-                    onClick={() =>
-                      setSelectedTickets(Math.min(10, selectedTickets + 1))
-                    }
-                    disabled={selectedTickets >= 10}
-                    className="w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-white disabled:opacity-50"
-                  >
-                    <Plus className="w-3 h-3" />
-                  </button>
+            {/* Venue - compact */}
+            <div className="flex items-center gap-3 mb-6 bg-[#2E2E2E] rounded-xl p-3">
+              <MapPin className="text-[#F2F900]" size={20} />
+              <p className="text-white text-sm">{ticket.venue}</p>
+            </div>
+
+            {/* Book Now Button */}
+            <Button
+              type="button"
+              className="w-full bg-[#F2F900] hover:bg-[#F2F900]/90 text-black text-base font-bold h-12 rounded-xl transition-all"
+              disabled={isCreatingBooking || !selectedSectionId}
+              onClick={handleProceedToPayment}
+            >
+              {isCreatingBooking ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Processing...</span>
                 </div>
-              </div>
-            </div>
-
-            {/* Venue - condensed */}
-            <div className="flex items-center text-xs text-neutral-400 mb-4">
-              <MapPin className="text-[#e31001] mr-1.5" size={14} />
-              <span>{ticket.venue}</span>
-            </div>
-
-            {/* Separator */}
-            <div className="h-px bg-neutral-800 mb-4"></div>
-
-            {/* Price and booking */}
-            <div className="flex justify-between items-center mb-3">
-              <div>
-                <p className="text-xs text-neutral-400">Total</p>
-                <p className="text-xl font-bold text-white">
-                  ₹
-                  {(
-                    getCurrentSectionPrice().amount * selectedTickets
-                  ).toLocaleString()}
-                </p>
-              </div>
-              <Button
-                type="button"
-                className="bg-[#e31001] hover:bg-[#d31001] text-white px-4 py-2 h-auto rounded-lg"
-                disabled={isCreatingBooking || !selectedSectionId}
-                onClick={handleProceedToPayment}
-              >
-                {isCreatingBooking ? (
-                  <div className="flex items-center">
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    <span>Processing...</span>
-                  </div>
-                ) : (
-                  "Buy Now"
-                )}
-              </Button>
-            </div>
+              ) : (
+                "Buy Now"
+              )}
+            </Button>
           </div>
         </div>
 
