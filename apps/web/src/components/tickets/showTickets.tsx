@@ -74,29 +74,29 @@ function ShowCard({ show, onClick, isSelected, isLoading }: ShowCardProps) {
       {/* Event Details - Vertical Stack */}
       <div className="space-y-5">
         <div className="flex items-center gap-4">
-          <div className="text-[#F2F900]">
-            <Calendar size={24} strokeWidth={1.5} />
+          <div className="text-[#f2f900]">
+            <Calendar size={10} strokeWidth={1.5} />
           </div>
           <p className="text-[18px] text-white">{show.date}</p>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="text-[#F2F900]">
-            <Timer size={24} strokeWidth={1.5} />
+          <div className="text-[#f2f900]">
+            <Timer size={10} strokeWidth={1.5} />
           </div>
           <p className="text-[18px] text-white">{show.duration}</p>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="text-[#F2F900]">
-            <Clock size={24} strokeWidth={1.5} />
+          <div className="text-[#f2f900]">
+            <Clock size={10} strokeWidth={1.5} />
           </div>
           <p className="text-[18px] text-white">{show.time}</p>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="text-[#F2F900]">
-            <MapPin size={24} strokeWidth={1.5} />
+          <div className="text-[#f2f900] outline-offset-[-0.88px] absolute outline w-4 h-5 left-[3.50px] top-[2px]">
+            <MapPin size={10} strokeWidth={1.5} />
           </div>
           <p className="text-[18px] text-white">{show.venue}</p>
         </div>

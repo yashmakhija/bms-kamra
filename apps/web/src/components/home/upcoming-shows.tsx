@@ -53,61 +53,63 @@ function ShowCard({ show, onClick, isSelected, isLoading }: ShowCardProps) {
   };
 
   return (
-    <div className="bg-[#1D1D1D] rounded-[32px] p-6 text-white flex flex-col">
+    <div className="bg-[#1D1D1D] w-90 rounded-[32px] p-6 text-white flex flex-col">
       {/* Title and Description */}
       <div className="space-y-3 mb-8">
-        <h2 className="text-[28px] font-semibold text-white leading-tight">
+        <h2 className="text-lg self-stretch font-bold text-[#f1f1f1] leading-relaxed">
           {show.title}
         </h2>
-        <p className="text-neutral-400 text-lg leading-relaxed line-clamp-2">
-          Watch Kunal perform at Dubai's biggest venue. This comic special...
+        <p className="text-[#f1f1f1]/70 justify-center  text-sm font-normal leading-tight line-clamp-2">
+          {show.description}
         </p>
       </div>
 
       {/* Event Details - Vertical Stack */}
-      <div className="space-y-5">
+      <div className="space-y-5 self-stretch ">
         <div className="flex items-center gap-4">
           <div className="text-[#F2F900]">
-            <Calendar size={24} strokeWidth={1.5} />
+            <Calendar size={20} strokeWidth={1.5} />
           </div>
-          <p className="text-[18px] text-white">{show.date}</p>
+          <p className="text-sm text-white">{show.date}</p>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="text-[#F2F900]">
-            <Timer size={24} strokeWidth={1.5} />
+            <Timer size={20} strokeWidth={1.5} />
           </div>
-          <p className="text-[18px] text-white">{show.duration}</p>
+          <p className="text-sm text-white">{show.duration}</p>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="text-[#F2F900]">
-            <Clock size={24} strokeWidth={1.5} />
+            <Clock size={20} strokeWidth={1.5} />
           </div>
-          <p className="text-[18px] text-white">{show.time}</p>
+          <p className="text-sm text-white">{show.time}</p>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="text-[#F2F900]">
-            <MapPin size={24} strokeWidth={1.5} />
+            <MapPin size={20} strokeWidth={1.5} />
           </div>
-          <p className="text-[18px] text-white">{show.venue}</p>
+          <p className="text-sm text-white">{show.venue}</p>
         </div>
       </div>
 
       {/* Price and Action Section */}
       <div className="mt-auto pt-6">
-        <div className="bg-[#2E2E2E] rounded-2xl p-4 flex items-center justify-between">
+        <div className="bg-[#2e2e2e] rounded-3xl border-t border-[#04021b]/10 p-4 flex items-start justify-between">
           <div>
-            <p className="text-[#F2F900] text-2xl font-bold">
+            <p className="text-[#F2F900] text-2xl font-bold leading-normal justify-center">
               ₹{show.price.amount.toLocaleString()}
             </p>
-            <p className="text-[#F1F1F1] text-sm">onwards</p>
+            <p className="text-[#F1F1F1] text-xs font-normal leading-none">
+              onwards
+            </p>
           </div>
 
           <button
             onClick={handleBookNow}
-            className="bg-[#F2F900] cursor-pointer w-12 h-12 rounded-full flex items-center justify-center transition-colors"
+            className="bg-[#f2f900] cursor-pointer w-11 self-stretch p-2 h-12 rounded-[64px] inline-flex justify-center items-center gap-2.5 transition-colors"
           >
             <ArrowUpRight className="w-6 h-6 text-black" />
           </button>
@@ -188,7 +190,7 @@ export function UpcomingShows({
   if (isLoading && shows.length === 0) {
     return (
       <section
-        className={cn("w-full py-24 bg-[#171717] text-center", className)}
+        className={cn("w-full py-24 bg-[#111111] text-center", className)}
       >
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center">
@@ -204,7 +206,7 @@ export function UpcomingShows({
   if (isError) {
     return (
       <section
-        className={cn("w-full py-24 bg-[#171717] text-center", className)}
+        className={cn("w-full py-24 bg-[#111111] text-center", className)}
       >
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center">
@@ -222,7 +224,7 @@ export function UpcomingShows({
   if (shows.length === 0) {
     return (
       <section
-        className={cn("w-full py-24 bg-[#171717] text-center", className)}
+        className={cn("w-full py-24 bg-[#111111] text-center", className)}
       >
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center">
@@ -244,7 +246,7 @@ export function UpcomingShows({
             className={cn(
               "font-bold leading-10",
               title === "Tickets" || title === "Similar Shows"
-                ? "text-[#F2F900] text-[40px]"
+                ? "text-[#F2F900] text-4xl"
                 : "text-white text-3xl"
             )}
           >
@@ -254,7 +256,7 @@ export function UpcomingShows({
           {/* Only show browse all button when removeButton is false */}
           {!removeButton && (
             <div className="hidden md:block">
-              <Button className="bg-neutral-50 text-neutral-900 text-sm leading-none font-medium rounded-full gap-2 overflow-hidden min-w-[110px] h-[40px] px-6 py-4">
+              <Button className="bg-neutral-50 text-neutral-900 text-sm leading-none font-medium inline-flex justify-center rounded-[32px] gap-2 overflow-hidden min-w-[110px] h-[40px] px-6 py-2">
                 <a href="/tickets">Browse all</a>
               </Button>
             </div>
@@ -268,7 +270,7 @@ export function UpcomingShows({
                 </Button>
               )
             ) : (
-              <Button className=" bg-neutral-50 text-neutral-900 rounded-xl w-12 h-12 p-0 flex items-center justify-center">
+              <Button className="bg-white hover:bg-white/90 text-black rounded-full w-10 h-10 p-0 flex items-center justify-center">
                 <a href="/tickets">
                   <ArrowRight size={20} />
                 </a>
@@ -277,49 +279,32 @@ export function UpcomingShows({
           </div>
         </div>
 
-        {/* Mobile & Tablet View: Horizontal Scrolling */}
-        <div className="xl:hidden">
-          <div
-            ref={scrollContainerRef}
-            className="flex gap-6 overflow-x-auto pb-6 snap-x snap-mandatory"
-            style={{
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-              WebkitOverflowScrolling: "touch",
-            }}
-          >
-            {limitedShows.map((show) => (
-              <div
-                key={show.id}
-                className="flex-shrink-0 snap-start snap-always"
-                style={{
-                  width: "calc(100vw - 100px)",
-                  maxWidth: "360px",
-                  minWidth: "300px",
-                }}
-              >
-                <ShowCard
-                  show={show}
-                  isSelected={selectedShowId === show.id}
-                  isLoading={isLoading && selectedShowId === show.id}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Desktop View: Grid */}
-        <div className="hidden xl:block">
-          <div className="grid grid-cols-3 gap-6">
-            {limitedShows.map((show) => (
+        {/* Horizontal Scrolling for All Screen Sizes */}
+        <div
+          ref={scrollContainerRef}
+          className="flex gap-6 overflow-x-auto pb-6 snap-x snap-mandatory scroll-pl-6"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          {limitedShows.map((show) => (
+            <div
+              key={show.id}
+              className="flex-shrink-0 snap-start snap-always"
+              style={{
+                width: "min(calc(100vw - 100px), 360px)",
+                minWidth: "300px",
+              }}
+            >
               <ShowCard
-                key={show.id}
                 show={show}
                 isSelected={selectedShowId === show.id}
                 isLoading={isLoading && selectedShowId === show.id}
               />
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>

@@ -40,22 +40,22 @@ export function ShowCard({
 
   return (
     <div
-      className={cn("group cursor-pointer", className)}
+      className={cn("group cursor-pointer ", className)}
       onClick={handleClick}
       {...props}
     >
-      <div className="bg-[#1D1D1D] rounded-[32px] p-4 flex flex-col">
+      <div className="bg-[#1D1D1D] w-full rounded-[32px] p-4 flex flex-col">
         <div className="relative w-full rounded-[24px] overflow-hidden mb-4">
           <img
             src={image}
             alt={title}
-            className="self-stretch relative rounded-[20px] h-full object-cover"
+            className="self-stretch  relative rounded-[20px] object-cover"
           />
         </div>
 
         {/* Text Container */}
         <div className="bg-[#2E2E2E] self-stretch  p-3  rounded-2xl inline-flex justify-start items-start gap-2.5 ">
-          <p className="text-base font-medium leading-snug text-white">
+          <p className="text-base mb-5 font-medium leading-snug text-white">
             {title}
           </p>
         </div>

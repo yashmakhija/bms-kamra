@@ -65,13 +65,13 @@ export function Podcast({ shows, title, className }: LatestUploadsProps) {
           </div>
 
           <div className="hidden md:block">
-            <Button className="bg-neutral-50 cursor-pointer text-neutral-900 text-sm leading-none font-medium rounded-full gap-2 overflow-hidden min-w-[110px] h-[40px] px-6 py-4">
+            <Button className="bg-neutral-50 cursor-pointer text-neutral-900 text-sm leading-tight font-medium rounded-full gap-2 overflow-hidden min-w-[110px] h-[40px] px-6 py-4">
               <a href="/podcasts">Browse all</a>
             </Button>
           </div>
 
           <div className="md:hidden">
-            <Button className="bg-neutral-50 text-neutral-900 rounded-xl w-12 h-12 p-0 flex items-center justify-center">
+            <Button className="bg-white hover:bg-white/90 text-black rounded-full w-10 h-10 p-0 flex items-center justify-center">
               <a href="/podcasts">
                 <ArrowRight size={20} />
               </a>
@@ -111,9 +111,10 @@ export function Podcast({ shows, title, className }: LatestUploadsProps) {
 
         {/* Desktop View: 3-Column Grid */}
         <div className="hidden xl:block">
-          <div className="grid grid-cols-3 gap-19">
+          <div className="grid grid-cols-3 gap-10">
             {limitedShows.map((show) => (
               <ShowCard
+                className=""
                 key={show.id}
                 title={show.title}
                 image={show.image}

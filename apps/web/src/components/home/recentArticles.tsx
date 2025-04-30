@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { cn } from "@repo/ui/utils";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { Button } from "@repo/ui/components/ui/button";
 import { create } from "zustand";
 import { Article, articles as mockArticles } from "../../data/articles";
@@ -32,24 +32,25 @@ const useArticleStore = create<ArticleState>((set) => ({
 
 function ArticleCard({ article }: { article: Article }) {
   return (
-    <div className="group cursor-pointer bg-[#1D1D1D] rounded-[32px] w-full lg:w-[611.74px] p-6 flex flex-col gap-6">
+    <div className="group cursor-pointer bg-[#1D1D1D] rounded-[32px] w-full max-w-[611.74px] p-6 flex flex-col gap-4">
       {/* Title */}
-      <h3 className="text-2xl text-white font-medium leading-loose">
+      <h3 className="text-2xl justify-center text-[#f1f1f1]  font-medium leading-loose">
         {article.title}
-        <p className="text-sm font-medium leading-tight text-[#f1f1f1]">
-          {article.date}
-        </p>
       </h3>
 
+      <p className="justify-center text-sm font-medium text-[#f1f1f1] leading-tight -mt-2">
+        {article.date}
+      </p>
+
       {/* Description */}
-      <p className="self-stretch justify-center text-[#f1f1f1]/50 text-base font-normal leading-snug">
+      <p className="self-stretch justify-center text-[#f1f1f1]/50 text-base font-normal leading-normal line-clamp-3">
         {article.excerpt}
       </p>
 
       {/* Arrow Button */}
       <div className="self-end mt-auto">
-        <div className="bg-[#F2F900] w-14 h-14 rounded-full flex items-center justify-center cursor-pointer hover:bg-[#F2F900]/90 transition-colors">
-          <ArrowUpRight className="w-7 h-7 text-black" />
+        <div className="bg-[#F2F900] w-12 h-12 rounded-full flex items-center justify-center cursor-pointer hover:bg-[#F2F900]/90 transition-colors">
+          <ArrowUpRight className="w-6 h-6 text-black" />
         </div>
       </div>
     </div>
@@ -91,7 +92,7 @@ export function RecentArticles({
 
           <div className="md:hidden">
             <Button className="bg-white hover:bg-white/90 text-black rounded-full w-10 h-10 p-0 flex items-center justify-center">
-              <ArrowUpRight size={18} />
+              <ArrowRight size={18} />
             </Button>
           </div>
         </div>
@@ -107,11 +108,11 @@ export function RecentArticles({
             {error}
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
             {articles.map((article) => (
               <div
                 key={article.id}
-                className="flex justify-center lg:justify-start"
+                className="flex justify-center xl:justify-start"
               >
                 <ArticleCard article={article} />
               </div>
