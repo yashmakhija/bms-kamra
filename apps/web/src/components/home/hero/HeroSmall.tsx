@@ -2,7 +2,7 @@ import styles from "../hero.module.css";
 
 export function HeroSmall() {
   return (
-    <section className="w-auto h-[581px] relative bg-gradient-to-b from-[#171717] to-[#510000] overflow-hidden">
+    <section className="w-auto h-[581px] relative bg-gradient-to-b from-neutral-900 to-[#f2f900] overflow-hidden">
       <div className="absolute md:top-10 left-1/2 sm:top-13  -translate-x-1/2 md:left-[50%] lg:top-10 top-10 w-[490px] md:w-[420px] h-[599px] z-0">
         <img
           src="/kunal-hero.png"

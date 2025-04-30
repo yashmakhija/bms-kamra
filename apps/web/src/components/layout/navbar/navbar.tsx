@@ -38,16 +38,10 @@ export function Navbar() {
   const { isAuthenticated, user, logout } = useAuthStore();
 
   const handleLoginClick = useCallback(() => {
-    console.log(
-      "Login button clicked in Navbar, current state:",
-      isAuthModalOpen
-    );
     setIsAuthModalOpen(true);
-    console.log("Auth modal state after setting:", true);
-  }, [isAuthModalOpen]);
+  }, []);
 
   const handleCloseModal = useCallback(() => {
-    console.log("Closing auth modal");
     setIsAuthModalOpen(false);
   }, []);
 
@@ -83,7 +77,7 @@ export function Navbar() {
     setIsProfileOpen(false);
   }, [logout]);
 
-  // Close profile dropdown when clicking outside - improved handler
+  // Close profile dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -94,109 +88,85 @@ export function Navbar() {
       }
     }
 
-    // Add the event listener only when dropdown is open
     if (isProfileOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       return () => {
         document.removeEventListener("mousedown", handleClickOutside);
       };
     }
-  }, [isProfileOpen]); // Only re-run when isProfileOpen changes
+  }, [isProfileOpen]);
 
   return (
     <>
       {/* Desktop Navbar */}
-      <nav className="h-16 top-0 flex items-center px-4 fixed w-full z-40 bg-[#171717]">
-        <div className="container mx-auto flex justify-between items-center">
-          {/* Left side */}
-          <div className="flex items-center gap-8">
-            {/* Hamburger Menu for Mobile & Tablet */}
-            <button
-              onClick={toggleMenu}
-              className="lg:hidden flex flex-col justify-center items-center space-y-1.5"
-            >
-              <span className="block w-6 h-0.5 bg-white"></span>
-              <span className="block w-6 h-0.5 bg-white"></span>
-              <span className="block w-6 h-0.5 bg-white"></span>
-            </button>
-
-            {/* Logo - Only visible on large screens */}
-            <Link to="/" className="hidden cursor-pointer lg:flex items-center">
-              <a href="/">
-                <img
-                  src="/logo.png"
-                  alt="The Kunal Kamra Show"
-                  className="h-12 w-12"
-                />
-              </a>
+      <div className="absolute top-0 left-0 w-full z-50 p-4 pointer-events-none">
+        {/* Large Screen Layout */}
+        <nav className="lg:flex hidden max-w-7xl mx-auto items-center justify-between rounded-full bg-[#1a1a1a] outline outline-white/10 outline-offset-[-1px] px-4 py-2 pointer-events-auto">
+          {/* Left side - Logo */}
+          <div className="flex items-center">
+            <Link to="/" className="flex items-center">
+              <img
+                src="/main-logo.png"
+                alt="The Kunal Kamra Show"
+                className="h-10 w-10 rounded-full"
+              />
             </Link>
 
-            {/* Navigation Links - Only visible on large screens */}
-            <div className="hidden lg:flex space-x-8">
+            {/* Search box */}
+            <div className="w-72 ml-6">
+              <div className="relative overflow-hidden">
+                <Input
+                  type="search"
+                  placeholder="Search..."
+                  className="bg-[#222222] border-none rounded-full pl-10 py-1.5 h-9 text-neutral-300 focus:outline-none"
+                />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 h-4 w-4" />
+              </div>
+            </div>
+          </div>
+
+          {/* Right side - Navigation & Login/Profile */}
+          <div className="flex items-center">
+            {/* Navigation Links */}
+            <div className="flex pr-4 items-center space-x-10 ">
               {navLinks.map((link) => (
                 <Link
                   key={link.title}
                   to={link.href}
                   className={cn(
-                    "text-sm text-neutral-300 hover:text-white transition-colors",
-                    link.title === "Tickets" && "text-[#aee301] font-medium"
+                    "text-sm text-neutral-300 hover:text-white transition-colors whitespace-nowrap",
+                    link.title === "Home" && "text-[#f0ea00] font-medium"
                   )}
                 >
                   {link.title}
                 </Link>
               ))}
             </div>
-          </div>
 
-          <div className="flex items-center space-x-4 md:space-x-2 lg:space-x-4">
-            <div className="hidden md:block">
-              <div className="relative">
-                <Input
-                  type="search"
-                  placeholder="Search"
-                  className="w-60 md:w-48 lg:w-80 bg-neutral-800 border-neutral-700 rounded-xl outline outline-neutral-600 inline-flex justify-start items-center gap-3 pl-10 py-1.5 h-10 text-neutral-300 focus:outline-none focus:ring-1 focus:ring-neutral-600 focus:border-neutral-600"
-                />
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-50 h-4 w-4" />
-              </div>
-            </div>
-
-            {/* Login button for non-authenticated users */}
+            {/* Login Button */}
             {!isAuthenticated ? (
               <Button
-                className="bg-[#e31001] hover:bg-[#c50e00] text-white px-4 py-2 h-10 rounded-md"
+                className="bg-[#f2f900] cursor-pointer hover:bg-[#e0da00] leading-tight text-black font-medium px-6 py-2 h-9 rounded-2xl"
                 onClick={handleLoginClick}
               >
                 Login
               </Button>
             ) : (
-              /* Profile section for authenticated users */
               <div className="relative" ref={profileRef}>
                 <Button
                   variant="ghost"
-                  className="flex items-center cursor-pointer gap-2 text-white hover:bg-neutral-800 rounded-md px-3 h-10"
+                  className="flex items-center justify-center rounded-full bg-[#f0ea00] text-black w-10 h-10 p-0"
                   onClick={handleProfileClick}
                 >
-                  <div className="h-8 w-8 rounded-full bg-[#e31001] flex items-center justify-center text-white overflow-hidden">
-                    {user?.image ? (
-                      <img
-                        src={user.image}
-                        alt={user.name || "User"}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User size={18} />
-                    )}
-                  </div>
-                  <span className="hidden md:inline-block text-sm font-medium truncate max-w-[100px]">
-                    {user?.name || "User"}
-                  </span>
-                  <ChevronDown
-                    size={16}
-                    className={cn(
-                      "transition-transform",
-                      isProfileOpen && "rotate-180"
-                    )}
-                  />
+                  {user?.image ? (
+                    <img
+                      src={user.image}
+                      alt={user.name || "User"}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <User size={20} />
+                  )}
                 </Button>
 
                 {/* Profile Dropdown */}
@@ -227,7 +197,6 @@ export function Navbar() {
                         <Calendar size={16} />
                         <span>My Tickets</span>
                       </Link>
-
                       <Link
                         to="/settings"
                         className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-700 w-full text-left"
@@ -251,123 +220,133 @@ export function Navbar() {
               </div>
             )}
           </div>
-        </div>
+        </nav>
 
-        {/* Mobile/Tablet Menu Dropdown */}
-        {isMenuOpen && (
-          <div className="absolute top-16 left-0 right-0 bg-[#171717] border-b border-neutral-800 lg:hidden">
-            <div className="flex flex-col p-4">
-              {/* Search Input for Mobile */}
-              <div className="relative mb-4 md:hidden">
-                <Input
-                  type="search"
-                  placeholder="Search"
-                  className="w-full bg-neutral-800 border-neutral-700 rounded-xl outline outline-neutral-600 inline-flex justify-start items-center gap-3 pl-10 py-1.5 h-10 text-neutral-300 focus:outline-none focus:ring-1 focus:ring-neutral-600 focus:border-neutral-600"
-                />
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-50 h-4 w-4" />
-              </div>
+        {/* Medium & Small Screen Layout */}
+        <nav className="lg:hidden flex max-w-7xl mx-auto items-center justify-between rounded-full bg-[#1a1a1a] outline outline-white/10 outline-offset-[-1px] px-4 py-2 pointer-events-auto">
+          {/* Left - Logo */}
+          <Link to="/" className="flex items-center">
+            <img
+              src="/main-logo.png"
+              alt="The Kunal Kamra Show"
+              className="h-10 w-10 rounded-full"
+            />
+          </Link>
 
-              {/* User Info for Mobile - Only show if authenticated */}
-              {isAuthenticated && (
-                <div className="mb-4 py-3 border-b border-neutral-800">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-[#e31001] flex items-center justify-center text-white">
-                      {user?.image ? (
-                        <img
-                          src={user.image}
-                          alt={user.name || "User"}
-                          className="w-full h-full object-cover rounded-full"
-                        />
-                      ) : (
-                        <User size={20} />
-                      )}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-white">
-                        {user?.name || "User"}
-                      </p>
-                      <p className="text-xs text-neutral-400">
-                        {user?.email || ""}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+          {/* Center - Search */}
+          <div className="flex-1 max-w-md mx-4">
+            <div className="relative">
+              <Input
+                type="search"
+                placeholder="Search..."
+                className="bg-[#222222] border-none rounded-full pl-10 py-1.5 h-9 text-neutral-300 focus:outline-none"
+              />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 h-4 w-4" />
+            </div>
+          </div>
 
-              {/* Nav Links */}
-              {navLinks.map((link) => (
-                <Link
-                  key={link.title}
-                  to={link.href}
-                  className={cn(
-                    "py-3 text-neutral-300 hover:text-white border-b border-neutral-800 last:border-0",
-                    link.title === "Tickets" && "text-[#aee301]"
-                  )}
-                  onClick={() => setIsMenuOpen(false)}
+          {/* Right - Login/Profile and Menu */}
+          <div className="flex items-center space-x-3">
+            {!isAuthenticated ? (
+              <Button
+                className="bg-[#f2f900] hover:bg-[#e0da00] leading-tight text-black font-medium px-6 py-2 h-9 rounded-2xl"
+                onClick={handleLoginClick}
+              >
+                Login
+              </Button>
+            ) : (
+              <div className="relative" ref={profileRef}>
+                <Button
+                  variant="ghost"
+                  className="flex items-center justify-center rounded-full bg-[#f0ea00] text-black w-10 h-10 p-0"
+                  onClick={handleProfileClick}
                 >
-                  {link.title}
-                </Link>
-              ))}
+                  {user?.image ? (
+                    <img
+                      src={user.image}
+                      alt={user.name || "User"}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  ) : (
+                    <User size={20} />
+                  )}
+                </Button>
+              </div>
+            )}
 
-              {/* User Account Links - Only show if authenticated */}
-              {isAuthenticated && (
-                <div className="mt-2">
+            {/* Hamburger Menu */}
+            <Button
+              variant="ghost"
+              className="p-1 text-white"
+              onClick={toggleMenu}
+            >
+              <Menu size={24} />
+            </Button>
+          </div>
+        </nav>
+
+        {/* Mobile Menu Dropdown */}
+        {isMenuOpen && (
+          <div className="absolute top-20 left-0 right-0 bg-[#171717] border-b border-neutral-800 z-50 pointer-events-auto">
+            <div className="container mx-auto p-4">
+              <div className="flex flex-col space-y-4">
+                {navLinks.map((link) => (
                   <Link
-                    to="/profile"
-                    className="py-3 text-neutral-300 hover:text-white border-b border-neutral-800 flex items-center gap-2"
+                    key={link.title}
+                    to={link.href}
+                    className={cn(
+                      "py-2 text-neutral-300 hover:text-white border-b border-neutral-700 last:border-0",
+                      link.title === "Home" && "text-[#f0ea00]"
+                    )}
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    <User size={16} />
-                    <span>Profile</span>
+                    {link.title}
                   </Link>
-                  <Link
-                    to="/bookings"
-                    className="py-3 text-neutral-300 hover:text-white border-b border-neutral-800 flex items-center gap-2"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Calendar size={16} />
-                    <span>My Bookings</span>
-                  </Link>
-                  <Link
-                    to="/settings"
-                    className="py-3 text-neutral-300 hover:text-white border-b border-neutral-800 flex items-center gap-2"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    <Settings size={16} />
-                    <span>Settings</span>
-                  </Link>
-                  <button
-                    className="py-3 text-red-400 hover:text-red-300 w-full text-left flex items-center gap-2"
-                    onClick={() => {
-                      handleLogout();
-                      setIsMenuOpen(false);
-                    }}
-                  >
-                    <LogOut size={16} />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              )}
+                ))}
+
+                {/* User Account Links - Only show if authenticated */}
+                {isAuthenticated && (
+                  <div className="pt-2 space-y-2">
+                    <Link
+                      to="/profile"
+                      className="py-2 text-neutral-300 hover:text-white border-b border-neutral-700 flex items-center gap-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <User size={16} />
+                      <span>Profile</span>
+                    </Link>
+                    <Link
+                      to="/bookings"
+                      className="py-2 text-neutral-300 hover:text-white border-b border-neutral-700 flex items-center gap-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Calendar size={16} />
+                      <span>My Bookings</span>
+                    </Link>
+                    <Link
+                      to="/settings"
+                      className="py-2 text-neutral-300 hover:text-white border-b border-neutral-700 flex items-center gap-2"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Settings size={16} />
+                      <span>Settings</span>
+                    </Link>
+                    <button
+                      className="py-2 text-red-400 hover:text-red-300 w-full text-left flex items-center gap-2 border-b border-neutral-700"
+                      onClick={() => {
+                        handleLogout();
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <LogOut size={16} />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
-      </nav>
-
-      {/* Add debugging information */}
-      <div
-        style={{
-          position: "fixed",
-          bottom: 0,
-          right: 0,
-          background: "rgba(0,0,0,0.5)",
-          color: "white",
-          padding: "2px 5px",
-          fontSize: "10px",
-          zIndex: 9999,
-          display: "none",
-        }}
-      >
-        Modal open: {isAuthModalOpen ? "true" : "false"}
       </div>
 
       <SimpleAuthModal isOpen={isAuthModalOpen} onClose={handleCloseModal} />

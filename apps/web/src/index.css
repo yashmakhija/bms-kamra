@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+/* Apply DM Sans as the default font */
+@layer base {
+  html {
+    font-family: "DM Sans", sans-serif;
+  }
+}
+
 /* Add PDF export mode styles to fix color compatibility issues */
 .pdf-export-mode {
   --background: #0f0f0f !important;
