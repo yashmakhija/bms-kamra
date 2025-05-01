@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import { Show, useShowsStore } from "../../store/shows";
+import { Show as StoreShow, useShowsStore } from "../../store/shows";
 import {
   Calendar,
   Clock,
@@ -23,100 +23,79 @@ import {
   DropdownMenuTrigger,
 } from "@repo/ui/components/ui/dropdown-menu";
 
-// Reusable Components
-interface InfoItemProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
+// Extended Show interface with category
+interface Show extends StoreShow {
+  category?: string;
 }
 
-function InfoItem({ icon, label, value }: InfoItemProps) {
-  return (
-    <div className="flex items-start gap-3 mb-0">
-      <div className="text-[#AEE301] mt-0.5">{icon}</div>
-      <div>
-        <p className="text-neutral-400 text-[10px] font-normal leading-3">
-          {label}
-        </p>
-        <p className="text-neutral-100 text-sm font-normal leading-tight mt-0.5">
-          {value}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-interface ShowCardProps {
-  show: Show;
-  onClick?: () => void;
-  isSelected?: boolean;
-  isLoading?: boolean;
-}
-
-function ShowCard({ show, onClick, isSelected, isLoading }: ShowCardProps) {
+// Ticket Card Component - Matches design in screenshots
+function ShowCard({ show }: { show: Show }) {
   const handleBookNow = (e: React.MouseEvent) => {
     e.stopPropagation();
     window.location.href = `/shows/${show.id}`;
   };
 
   return (
-    <div className="group cursor-pointer w-full bg-[#1D1D1D] rounded-[32px] p-6 text-white flex flex-col">
+    <div className="bg-[#1D1D1D] w-full rounded-[32px] p-6 text-white flex flex-col h-full">
       {/* Title and Description */}
-      <div className="space-y-3 mb-8">
-        <h2 className="text-[28px] font-semibold text-white leading-tight">
-          {show.title}
+      <div className="space-y-2 mb-6">
+        <h2 className="text-xl self-stretch font-bold text-white leading-tight line-clamp-2">
+          {show.title || "Desh Ke Buddhe | Stand-Up Comedy by Kunal Kamra"}
         </h2>
-        <p className="text-neutral-400 text-lg leading-relaxed line-clamp-2">
-          Watch Kunal perform at Dubai's biggest venue. This comic special...
+        <p className="text-gray-400 text-sm font-normal leading-tight line-clamp-2">
+          {show.description ||
+            "Watch Kunal perform at Dubai's biggest venue. This comic special..."}
         </p>
       </div>
 
-      {/* Event Details - Vertical Stack */}
-      <div className="space-y-5">
-        <div className="flex items-center gap-4">
-          <div className="text-[#f2f900]">
-            <Calendar size={10} strokeWidth={1.5} />
+      {/* Event Details - Vertical Stack with yellow icons */}
+      <div className="space-y-4 self-stretch">
+        <div className="flex items-center gap-3">
+          <div className="text-[#F2F900]">
+            <Calendar size={16} strokeWidth={1.5} />
           </div>
-          <p className="text-[18px] text-white">{show.date}</p>
+          <p className="text-sm text-white">{show.date || "26 Jan 2026"}</p>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="text-[#f2f900]">
-            <Timer size={10} strokeWidth={1.5} />
+        <div className="flex items-center gap-3">
+          <div className="text-[#F2F900]">
+            <Timer size={16} strokeWidth={1.5} />
           </div>
-          <p className="text-[18px] text-white">{show.duration}</p>
+          <p className="text-sm text-white">{show.duration || "90 mins"}</p>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="text-[#f2f900]">
-            <Clock size={10} strokeWidth={1.5} />
+        <div className="flex items-center gap-3">
+          <div className="text-[#F2F900]">
+            <Clock size={16} strokeWidth={1.5} />
           </div>
-          <p className="text-[18px] text-white">{show.time}</p>
+          <p className="text-sm text-white">{show.time || "8:00 PM"}</p>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="text-[#f2f900] outline-offset-[-0.88px] absolute outline w-4 h-5 left-[3.50px] top-[2px]">
-            <MapPin size={10} strokeWidth={1.5} />
+        <div className="flex items-center gap-3">
+          <div className="text-[#F2F900]">
+            <MapPin size={16} strokeWidth={1.5} />
           </div>
-          <p className="text-[18px] text-white">{show.venue}</p>
+          <p className="text-sm text-white">
+            {show.venue || "Emirates Theatre, Dubai"}
+          </p>
         </div>
       </div>
 
       {/* Price and Action Section */}
       <div className="mt-auto pt-6">
-        <div className="bg-[#2E2E2E] rounded-2xl p-4 flex items-center justify-between">
+        <div className="bg-[#2A2A2A] rounded-3xl p-4 flex items-center justify-between">
           <div>
-            <p className="text-[#F2F900] text-2xl font-bold">
-              ₹{show.price.amount.toLocaleString()}
+            <p className="text-[#F2F900] text-2xl font-bold leading-none">
+              ₹{show.price?.amount?.toLocaleString() || "3,999"}
             </p>
-            <p className="text-[#F1F1F1] text-sm">onwards</p>
+            <p className="text-white text-xs font-normal mt-1">onwards</p>
           </div>
 
           <button
             onClick={handleBookNow}
-            className="bg-[#F2F900] cursor-pointer w-12 h-12 rounded-full flex items-center justify-center transition-colors hover:bg-[#F2F900]/90"
+            className="bg-[#F2F900] cursor-pointer w-10 h-10 rounded-full flex justify-center items-center"
           >
-            <ArrowUpRight className="w-6 h-6 text-black" />
+            <ArrowRight className="w-5 h-5 text-black" />
           </button>
         </div>
       </div>
@@ -124,24 +103,29 @@ function ShowCard({ show, onClick, isSelected, isLoading }: ShowCardProps) {
   );
 }
 
-interface FilterButtonProps {
+// Filter Component
+function FilterButton({
+  label,
+  options,
+  onSelect,
+  selectedValue,
+}: {
   label: string;
   options: string[];
   onSelect: (value: string) => void;
-}
-
-function FilterButton({ label, options, onSelect }: FilterButtonProps) {
+  selectedValue: string;
+}) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex justify-between items-center w-full bg-neutral-800 rounded-xl p-4 text-white">
-        <span>{label}</span>
-        <ChevronDown size={20} />
+      <DropdownMenuTrigger className="flex justify-between items-center w-full bg-[#1D1D1D] rounded-[32px] py-3 px-5 text-white text-sm">
+        <span>{selectedValue || label}</span>
+        <ChevronDown size={18} />
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="bg-neutral-800 text-white border-neutral-700 rounded-xl min-w-[200px]">
+      <DropdownMenuContent className="bg-[#1D1D1D] text-white border-[#2D2D2D] rounded-xl min-w-[200px]">
         {options.map((option) => (
           <DropdownMenuItem
             key={option}
-            className="hover:bg-neutral-700 cursor-pointer"
+            className="hover:bg-[#2D2D2D] cursor-pointer text-sm"
             onClick={() => onSelect(option)}
           >
             {option}
@@ -166,6 +150,7 @@ export function ShowTickets({ shows: propShows, className }: ShowTicketsProps) {
   const [selectedLocation, setSelectedLocation] = useState<string>("");
   const [selectedDuration, setSelectedDuration] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
 
   // Mock filter options - replace with real data when available
   const priceOptions = [
@@ -182,13 +167,14 @@ export function ShowTickets({ shows: propShows, className }: ShowTicketsProps) {
     "Bangalore",
     "Hyderabad",
     "Pune",
+    "Dubai",
   ];
   const durationOptions = [
     "All Durations",
-    "1 hour",
-    "1.5 hours",
-    "2 hours",
-    "2+ hours",
+    "60 mins",
+    "90 mins",
+    "120 mins",
+    "150+ mins",
   ];
   const dateOptions = [
     "Any Date",
@@ -197,22 +183,112 @@ export function ShowTickets({ shows: propShows, className }: ShowTicketsProps) {
     "This Month",
     "Next Month",
   ];
+  const categoryOptions = [
+    "All Categories",
+    "Comedy",
+    "Music",
+    "Theatre",
+    "Sports",
+    "Conference",
+  ];
 
   // Get state and actions from store
   const {
     shows: storeShows,
-    selectedShowId,
     isLoading,
     isError,
     errorMessage,
     fetchShows,
-    selectShow,
-    setLoading,
-    getTicketIdFromShowId,
   } = useShowsStore();
 
   // Use API shows if no props were passed
   const shows = propShows || storeShows;
+
+  // Filter the shows based on selected filters
+  const getFilteredShows = () => {
+    let filtered = [...shows];
+
+    // Filter by price
+    if (selectedPrice && selectedPrice !== "All Prices") {
+      filtered = filtered.filter((show) => {
+        const price = show.price?.amount || 0;
+        switch (selectedPrice) {
+          case "Under ₹500":
+            return price < 500;
+          case "₹500 - ₹1000":
+            return price >= 500 && price <= 1000;
+          case "₹1000 - ₹2000":
+            return price > 1000 && price <= 2000;
+          case "Above ₹2000":
+            return price > 2000;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Filter by location
+    if (selectedLocation && selectedLocation !== "All Locations") {
+      filtered = filtered.filter((show) => {
+        return show.venue?.includes(selectedLocation);
+      });
+    }
+
+    // Filter by duration
+    if (selectedDuration && selectedDuration !== "All Durations") {
+      filtered = filtered.filter((show) => {
+        return show.duration === selectedDuration;
+      });
+    }
+
+    // Filter by date
+    if (selectedDate && selectedDate !== "Any Date") {
+      const currentDate = new Date();
+      const showDate = new Date();
+
+      filtered = filtered.filter((show) => {
+        if (!show.date) return true;
+
+        const eventDate = new Date(show.date);
+
+        switch (selectedDate) {
+          case "Today":
+            return eventDate.toDateString() === currentDate.toDateString();
+          case "This Weekend":
+            const saturday = new Date(currentDate);
+            saturday.setDate(
+              currentDate.getDate() + (6 - currentDate.getDay())
+            );
+            const sunday = new Date(saturday);
+            sunday.setDate(saturday.getDate() + 1);
+            return eventDate >= saturday && eventDate <= sunday;
+          case "This Month":
+            return (
+              eventDate.getMonth() === currentDate.getMonth() &&
+              eventDate.getFullYear() === currentDate.getFullYear()
+            );
+          case "Next Month":
+            const nextMonth = new Date(currentDate);
+            nextMonth.setMonth(currentDate.getMonth() + 1);
+            return (
+              eventDate.getMonth() === nextMonth.getMonth() &&
+              eventDate.getFullYear() === nextMonth.getFullYear()
+            );
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Filter by category
+    if (selectedCategory && selectedCategory !== "All Categories") {
+      filtered = filtered.filter((show) => {
+        return show.category === selectedCategory;
+      });
+    }
+
+    return filtered;
+  };
 
   // Fetch shows from API on component mount
   useEffect(() => {
@@ -221,25 +297,34 @@ export function ShowTickets({ shows: propShows, className }: ShowTicketsProps) {
     }
   }, [fetchShows, propShows]);
 
-  const handleShowSelect = async (id: string) => {
-    if (isLoading) return;
-    setLoading(true);
-    try {
-      selectShow(id);
-      // Navigate directly to the show page using the show ID
-      navigate(`/shows/${id}`);
-    } catch (error) {
-      console.error("Failed to select show:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Mock shows data if needed or if there are no shows after filtering
+  const mockShows = Array(9).fill({
+    id: "1",
+    title: "Desh Ke Buddhe | Stand-Up Comedy by Kunal Kamra",
+    description:
+      "Watch Kunal perform at Dubai's biggest venue. This comic special...",
+    date: "26 Jan 2026",
+    time: "8:00 PM",
+    duration: "90 mins",
+    venue: "Emirates Theatre, Dubai",
+    price: { amount: 3999, currency: "INR" },
+    category: "Comedy",
+  });
+
+  // Get filtered shows
+  const filteredShows = getFilteredShows();
+  const displayShows =
+    filteredShows.length > 0
+      ? filteredShows
+      : shows.length > 0
+        ? shows
+        : mockShows;
 
   // Loading state
   if (isLoading && shows.length === 0) {
     return (
       <section
-        className={cn("w-full py-24 bg-[#171717] text-center", className)}
+        className={cn("w-full py-24 bg-[#111111] text-center", className)}
       >
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center">
@@ -255,7 +340,7 @@ export function ShowTickets({ shows: propShows, className }: ShowTicketsProps) {
   if (isError) {
     return (
       <section
-        className={cn("w-full py-24 bg-[#171717] text-center", className)}
+        className={cn("w-full py-24 bg-[#111111] text-center", className)}
       >
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center">
@@ -269,127 +354,268 @@ export function ShowTickets({ shows: propShows, className }: ShowTicketsProps) {
     );
   }
 
-  // No shows state
-  if (shows.length === 0) {
+  // No results state after filtering
+  if (filteredShows.length === 0 && shows.length > 0) {
     return (
-      <section
-        className={cn("w-full py-24 bg-[#171717] text-center", className)}
-      >
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center justify-center">
+      <section className={cn("w-full bg-[#111111] min-h-screen", className)}>
+        <div className="container mx-auto px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+          {/* Title Section */}
+          <div className="flex justify-between items-center mb-8">
+            <div className="text-[#F2F900] text-4xl font-bold leading-10">
+              Tickets
+            </div>
+          </div>
+
+          {/* Medium Device - Top Horizontal Scrollable Filters */}
+          <div className="hidden md:flex lg:hidden overflow-hidden gap-3 pb-6 mb-6 no-scrollbar">
+            <div className="flex-shrink-0 min-w-[170px]">
+              <FilterButton
+                label="Price"
+                options={priceOptions}
+                onSelect={setSelectedPrice}
+                selectedValue={selectedPrice}
+              />
+            </div>
+            <div className="flex-shrink-0 min-w-[170px]">
+              <FilterButton
+                label="Location"
+                options={locationOptions}
+                onSelect={setSelectedLocation}
+                selectedValue={selectedLocation}
+              />
+            </div>
+            <div className="flex-shrink-0 min-w-[170px]">
+              <FilterButton
+                label="Duration"
+                options={durationOptions}
+                onSelect={setSelectedDuration}
+                selectedValue={selectedDuration}
+              />
+            </div>
+            <div className="flex-shrink-0 min-w-[170px]">
+              <FilterButton
+                label="Date"
+                options={dateOptions}
+                onSelect={setSelectedDate}
+                selectedValue={selectedDate}
+              />
+            </div>
+            <div className="flex-shrink-0 min-w-[170px]">
+              <FilterButton
+                label="Category"
+                options={categoryOptions}
+                onSelect={setSelectedCategory}
+                selectedValue={selectedCategory}
+              />
+            </div>
+          </div>
+
+          {/* Mobile Filters - Show only two main filters */}
+          <div className="md:hidden flex gap-3 pb-6 mb-6">
+            <div className="flex-1">
+              <FilterButton
+                label="Location"
+                options={locationOptions}
+                onSelect={setSelectedLocation}
+                selectedValue={selectedLocation}
+              />
+            </div>
+            <div className="flex-1">
+              <FilterButton
+                label="Duration"
+                options={durationOptions}
+                onSelect={setSelectedDuration}
+                selectedValue={selectedDuration}
+              />
+            </div>
+          </div>
+
+          {/* No Results Message */}
+          <div className="flex flex-col items-center justify-center py-16 text-center">
             <AlertCircle className="w-10 h-10 text-[#e31001] mb-4" />
-            <p className="text-white text-lg">
-              No upcoming shows at the moment. Check back later!
+            <p className="text-white text-lg mb-4">
+              No shows match your selected filters
             </p>
+            <Button
+              className="bg-[#F2F900] text-black rounded-full px-6 py-2 hover:bg-[#F2F900]/90"
+              onClick={() => {
+                setSelectedPrice("");
+                setSelectedLocation("");
+                setSelectedDuration("");
+                setSelectedDate("");
+                setSelectedCategory("");
+              }}
+            >
+              Clear All Filters
+            </Button>
           </div>
         </div>
       </section>
     );
   }
 
+  // Main render - Shows with Filters
   return (
-    <section className={cn("w-full bg-[#111111]", className)}>
-      <div className="container mx-auto px-4 md:px-8 lg:px-30">
-        {/* Filter Section */}
-        <div className="mb-8 mt-8">
-          {/* Small Screen: Horizontal Scrollable Filters */}
-          <div className="flex md:hidden overflow-x-auto gap-4 pb-4 snap-x snap-mandatory no-scrollbar">
-            <div className="flex-shrink-0 min-w-[260px] snap-start">
-              <FilterButton
-                label="Date"
-                options={dateOptions}
-                onSelect={setSelectedDate}
-              />
-            </div>
-            <div className="flex-shrink-0 min-w-[260px] snap-start">
-              <FilterButton
-                label="Duration"
-                options={durationOptions}
-                onSelect={setSelectedDuration}
-              />
-            </div>
-            <div className="flex-shrink-0 min-w-[260px] snap-start">
-              <FilterButton
-                label="Location"
-                options={locationOptions}
-                onSelect={setSelectedLocation}
-              />
-            </div>
-            <div className="flex-shrink-0 min-w-[260px] snap-start">
-              <FilterButton
-                label="Price"
-                options={priceOptions}
-                onSelect={setSelectedPrice}
-              />
-            </div>
-          </div>
-
-          {/* Medium-Large Screen: Grid Filters */}
-          <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <section className={cn("w-full bg-[#111111] min-h-screen", className)}>
+      <div className="container mx-auto px-4 md:px-8 lg:px-16 xl:px-24 py-8">
+        {/* Medium Device - Top Horizontal Scrollable Filters */}
+        <div className="hidden md:flex lg:hidden overflow-hidden gap-3 pb-6 mb-6 no-scrollbar">
+          <div className="flex-shrink-0 min-w-[170px]">
             <FilterButton
               label="Price"
               options={priceOptions}
               onSelect={setSelectedPrice}
+              selectedValue={selectedPrice}
             />
+          </div>
+          <div className="flex-shrink-0 min-w-[170px]">
             <FilterButton
               label="Location"
               options={locationOptions}
               onSelect={setSelectedLocation}
+              selectedValue={selectedLocation}
             />
+          </div>
+          <div className="flex-shrink-0 min-w-[170px]">
             <FilterButton
               label="Duration"
               options={durationOptions}
               onSelect={setSelectedDuration}
+              selectedValue={selectedDuration}
             />
+          </div>
+          <div className="flex-shrink-0 min-w-[170px]">
             <FilterButton
               label="Date"
               options={dateOptions}
               onSelect={setSelectedDate}
+              selectedValue={selectedDate}
+            />
+          </div>
+          <div className="flex-shrink-0 min-w-[170px]">
+            <FilterButton
+              label="Category"
+              options={categoryOptions}
+              onSelect={setSelectedCategory}
+              selectedValue={selectedCategory}
             />
           </div>
         </div>
 
-        {/* Mobile & Tablet View: Horizontal Scrolling */}
-        <div className="xl:hidden">
-          <div
-            className="flex gap-6 overflow-x-auto pb-6 snap-x snap-mandatory no-scrollbar"
-            style={{
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-              WebkitOverflowScrolling: "touch",
-            }}
-          >
-            {shows.map((show) => (
-              <div
-                key={show.id}
-                className="flex-shrink-0 snap-start snap-always"
-                style={{
-                  width: "calc(100vw - 100px)",
-                  maxWidth: "360px",
-                  minWidth: "300px",
-                }}
-              >
-                <ShowCard
-                  show={show}
-                  isSelected={selectedShowId === show.id}
-                  isLoading={isLoading && selectedShowId === show.id}
-                />
-              </div>
-            ))}
+        {/* Mobile Filters - Show only two main filters */}
+        <div className="md:hidden flex gap-3 pb-6 mb-6">
+          <div className="flex-1">
+            <FilterButton
+              label="Location"
+              options={locationOptions}
+              onSelect={setSelectedLocation}
+              selectedValue={selectedLocation}
+            />
+          </div>
+          <div className="flex-1">
+            <FilterButton
+              label="Duration"
+              options={durationOptions}
+              onSelect={setSelectedDuration}
+              selectedValue={selectedDuration}
+            />
           </div>
         </div>
 
-        {/* Desktop View: Grid */}
-        <div className="hidden xl:block">
-          <div className="grid grid-cols-3 mb-8 gap-6">
-            {shows.map((show) => (
-              <ShowCard
-                key={show.id}
-                show={show}
-                isSelected={selectedShowId === show.id}
-                isLoading={isLoading && selectedShowId === show.id}
-              />
-            ))}
+        {/* Main Content Area with Sidebar for Desktop */}
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Sidebar Filters - Desktop Only */}
+          <div className="hidden lg:block w-64 flex-shrink-0">
+            <h2 className="text-white text-xl font-bold mb-6">Filters</h2>
+            <div className="space-y-4">
+              <div>
+                <FilterButton
+                  label="Price"
+                  options={priceOptions}
+                  onSelect={setSelectedPrice}
+                  selectedValue={selectedPrice}
+                />
+              </div>
+              <div>
+                <FilterButton
+                  label="Location"
+                  options={locationOptions}
+                  onSelect={setSelectedLocation}
+                  selectedValue={selectedLocation}
+                />
+              </div>
+              <div>
+                <FilterButton
+                  label="Duration"
+                  options={durationOptions}
+                  onSelect={setSelectedDuration}
+                  selectedValue={selectedDuration}
+                />
+              </div>
+              <div>
+                <FilterButton
+                  label="Date"
+                  options={dateOptions}
+                  onSelect={setSelectedDate}
+                  selectedValue={selectedDate}
+                />
+              </div>
+              <div>
+                <FilterButton
+                  label="Category"
+                  options={categoryOptions}
+                  onSelect={setSelectedCategory}
+                  selectedValue={selectedCategory}
+                />
+              </div>
+              {/* Clear Filters Button - Only shown when filters are applied */}
+              {(selectedPrice ||
+                selectedLocation ||
+                selectedDuration ||
+                selectedDate ||
+                selectedCategory) && (
+                <div className="pt-4">
+                  <Button
+                    className="w-full bg-[#F2F900] text-black rounded-full px-4 py-2 hover:bg-[#F2F900]/90"
+                    onClick={() => {
+                      setSelectedPrice("");
+                      setSelectedLocation("");
+                      setSelectedDuration("");
+                      setSelectedDate("");
+                      setSelectedCategory("");
+                    }}
+                  >
+                    Clear All Filters
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Shows Content Area */}
+          <div className="flex-1">
+            <div className="flex justify-center lg:justify-between items-center mb-8">
+              <div className="text-white text-4xl font-bold leading-10">
+                Tickets
+              </div>
+            </div>
+            {/* Grid Layout for Medium & Large Devices */}
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6 auto-rows-fr">
+              {displayShows.map((show, index) => (
+                <div key={`${show.id}-${index}`} className="h-full">
+                  <ShowCard show={show} />
+                </div>
+              ))}
+            </div>
+
+            {/* Single Column for Mobile */}
+            <div className="md:hidden space-y-6">
+              {displayShows.map((show, index) => (
+                <div key={`${show.id}-${index}`}>
+                  <ShowCard show={show} />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
