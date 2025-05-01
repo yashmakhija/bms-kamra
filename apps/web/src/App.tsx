@@ -9,7 +9,7 @@ import { AuthProvider } from "./providers/auth-provider";
 import { ProtectedRoute } from "./components/auth/protected-route";
 import PaymentProcessingPage from "./pages/payment";
 import PaymentSuccessPage from "./pages/payment/success";
-import PaymentCancelPage from "./pages/payment/cancel";
+import { PaymentCancelPage } from "./pages/payment/cancel";
 import Tickets from "./pages/tickets";
 import Podcasts from "./pages/podcasts";
 import LatestUploads from "./pages/latest-uploads";

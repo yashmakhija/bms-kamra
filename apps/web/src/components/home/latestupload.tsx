@@ -68,11 +68,9 @@ export function LatestUploads({ shows, className }: LatestUploadsProps) {
           </div>
 
           <div className="md:hidden">
-            <Button className="bg-white hover:bg-white/90 text-black rounded-full w-10 h-10 p-0 flex items-center justify-center">
-              <a href="/latest-uploads">
-                <ArrowRight size={20} />
-              </a>
-            </Button>
+            <a href="/latest-uploads">
+              <ArrowRight size={20} />
+            </a>
           </div>
         </div>
 
