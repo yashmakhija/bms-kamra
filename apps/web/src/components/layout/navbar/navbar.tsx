@@ -1,16 +1,13 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { Button } from "@repo/ui/components/ui/button";
 import {
   Menu,
   Search,
   X,
   User,
-  ChevronDown,
   LogOut,
   Settings,
-  Calendar,
-  ShoppingBag,
 } from "lucide-react";
 import { SimpleAuthModal } from "../../auth/simple-auth-modal";
 import { Input } from "@repo/ui/components/ui/input";
@@ -30,9 +27,11 @@ const navLinks = [
 export function Navbar() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSearchActive, setIsSearchActive] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [_, setIsSearchActive] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
 
   // Get authentication state from store
   const { isAuthenticated, user, logout } = useAuthStore();
@@ -51,50 +50,50 @@ export function Navbar() {
     setIsProfileOpen(false);
   }, []);
 
+  const toggleProfile = useCallback(() => {
+    setIsProfileOpen((prev) => !prev);
+    setIsMenuOpen(false);
+    setIsSearchActive(false);
+  }, []);
+
   const toggleSearch = useCallback(() => {
     setIsSearchActive((prev) => !prev);
     setIsMenuOpen(false);
     setIsProfileOpen(false);
   }, []);
 
-  const toggleProfile = useCallback((e?: React.MouseEvent) => {
-    e?.stopPropagation(); // Prevent event bubbling
-    setIsProfileOpen((prev) => !prev);
-    setIsMenuOpen(false);
-  }, []);
-
-  // Enhanced click handler for profile button with stopPropagation
-  const handleProfileClick = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      toggleProfile(e);
-    },
-    [toggleProfile]
-  );
-
   const handleLogout = useCallback(() => {
     logout();
     setIsProfileOpen(false);
   }, [logout]);
 
-  // Close profile dropdown when clicking outside
+  // Close menu dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
-        profileRef.current &&
-        !profileRef.current.contains(event.target as Node)
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        !(event.target as HTMLElement).closest('button')?.onclick?.toString().includes('toggleMenu')
+      ) {
+        setIsMenuOpen(false);
+      }
+
+      if (
+        profileRef.current && 
+        !profileRef.current.contains(event.target as Node) &&
+        !(event.target as HTMLElement).closest('button')?.onclick?.toString().includes('toggleProfile')
       ) {
         setIsProfileOpen(false);
       }
     }
 
-    if (isProfileOpen) {
+    if (isMenuOpen || isProfileOpen) {
       document.addEventListener("mousedown", handleClickOutside);
       return () => {
         document.removeEventListener("mousedown", handleClickOutside);
       };
     }
-  }, [isProfileOpen]);
+  }, [isMenuOpen, isProfileOpen]);
 
   return (
     <>
@@ -135,7 +134,7 @@ export function Navbar() {
                   to={link.href}
                   className={cn(
                     "text-sm text-neutral-300 hover:text-white transition-colors whitespace-nowrap",
-                    link.title === "Home" && "text-[#f0ea00] font-medium"
+                    link.href === location.pathname && "text-[#f0ea00] font-medium"
                   )}
                 >
                   {link.title}
@@ -147,7 +146,9 @@ export function Navbar() {
             {!isAuthenticated ? (
               <Button
                 className="bg-[#f2f900] cursor-pointer hover:bg-[#e0da00] leading-tight text-black font-medium px-6 py-2 h-9 rounded-2xl"
-                onClick={handleLoginClick}
+                onClick={() => {
+                  window.location.href = "/auth/login";
+                }}
               >
                 Login
               </Button>
@@ -155,8 +156,8 @@ export function Navbar() {
               <div className="relative" ref={profileRef}>
                 <Button
                   variant="ghost"
-                  className="flex items-center justify-center rounded-full bg-[#f0ea00] text-black w-10 h-10 p-0"
-                  onClick={handleProfileClick}
+                  className="flex cursor-pointer items-center justify-center rounded-full bg-[#f0ea00] text-black w-10 h-10 p-0"
+                  onClick={toggleProfile}
                 >
                   {user?.image ? (
                     <img
@@ -171,48 +172,34 @@ export function Navbar() {
 
                 {/* Profile Dropdown */}
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-neutral-800 border border-neutral-700 rounded-lg shadow-xl overflow-hidden z-50">
-                    <div className="py-2 px-4 border-b border-neutral-700">
-                      <p className="text-sm font-medium text-white truncate">
-                        {user?.name || "User"}
-                      </p>
-                      <p className="text-xs text-neutral-400 truncate">
-                        {user?.email || ""}
-                      </p>
+                  <div className="absolute right-0 mt-2 w-56 bg-[#1a1a1a] border border-white/10 rounded-3xl z-50 overflow-hidden shadow-lg">
+                    <div className="p-4 pb-2 border-b border-white/10">
+                      <p className="text-white font-medium">{user?.name || "User"}</p>
+                      <p className="text-neutral-400 text-sm truncate">{user?.email || ""}</p>
                     </div>
-                    <div className="py-1">
+                    <div className="py-2 px-2">
                       <Link
                         to="/profile"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-700 w-full text-left"
+                        className="py-3 px-6 text-base text-neutral-300 hover:text-white hover:bg-[#222222] rounded-xl flex items-center gap-3 block w-full text-left mb-1"
                         onClick={() => setIsProfileOpen(false)}
                       >
-                        <User size={16} />
-                        <span>Profile</span>
-                      </Link>
-                      <Link
-                        to="/bookings"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-700 w-full text-left"
-                        onClick={() => setIsProfileOpen(false)}
-                      >
-                        <Calendar size={16} />
-                        <span>My Tickets</span>
+                        <User size={18} />
+                        Profile
                       </Link>
                       <Link
                         to="/settings"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-700 w-full text-left"
+                        className="py-3 px-6 text-base text-neutral-300 hover:text-white hover:bg-[#222222] rounded-xl flex items-center gap-3 block w-full text-left mb-1"
                         onClick={() => setIsProfileOpen(false)}
                       >
-                        <Settings size={16} />
-                        <span>Settings</span>
+                        <Settings size={18} />
+                        Settings
                       </Link>
-                    </div>
-                    <div className="border-t border-neutral-700">
                       <button
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:bg-neutral-700 w-full text-left"
+                        className="py-3 px-6 text-base text-red-400 hover:text-red-300 hover:bg-[#222222] rounded-xl flex items-center gap-3 w-full text-left"
                         onClick={handleLogout}
                       >
-                        <LogOut size={16} />
-                        <span>Logout</span>
+                        <LogOut size={18} />
+                        Logout
                       </button>
                     </div>
                   </div>
@@ -249,17 +236,17 @@ export function Navbar() {
           <div className="flex items-center space-x-3">
             {!isAuthenticated ? (
               <Button
-                className="bg-[#f2f900] hover:bg-[#e0da00] leading-tight text-black font-medium px-6 py-2 h-9 rounded-2xl"
+                className="bg-[#f2f900] hover:bg-[#e0da00] leading-tight text-black font-medium rounded-full w-10 h-10 p-0 flex items-center justify-center"
                 onClick={handleLoginClick}
               >
-                Login
+                <User size={20} />
               </Button>
             ) : (
               <div className="relative" ref={profileRef}>
                 <Button
                   variant="ghost"
-                  className="flex items-center justify-center rounded-full bg-[#f0ea00] text-black w-10 h-10 p-0"
-                  onClick={handleProfileClick}
+                  className="flex cursor-pointer items-center justify-center rounded-full bg-[#f0ea00] text-black w-10 h-10 p-0"
+                  onClick={toggleProfile}
                 >
                   {user?.image ? (
                     <img
@@ -271,79 +258,67 @@ export function Navbar() {
                     <User size={20} />
                   )}
                 </Button>
+
+                {/* Mobile Profile Dropdown */}
+                {isProfileOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-[#1a1a1a] border border-white/10 rounded-3xl z-50 overflow-hidden shadow-lg">
+                    <div className="py-2 px-2">
+                      <Link
+                        to="/profile"
+                        className="py-3 px-6 text-base text-neutral-300 hover:text-white hover:bg-[#222222] rounded-xl flex items-center gap-3 block w-full text-left mb-1"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        <User size={18} />
+                        Profile
+                      </Link>
+                      <button
+                        className="py-3 px-6 text-base text-red-400 hover:text-red-300 hover:bg-[#222222] rounded-xl flex items-center gap-3 w-full text-left"
+                        onClick={handleLogout}
+                      >
+                        <LogOut size={18} />
+                        Logout
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             {/* Hamburger Menu */}
             <Button
               variant="ghost"
-              className="p-1 text-white"
+              className={cn(
+                "p-0 flex items-center justify-center w-10 h-10 rounded-2xl",
+                isMenuOpen ? "bg-neutral-800" : "text-white"
+              )}
               onClick={toggleMenu}
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             >
-              <Menu size={24} />
+              {isMenuOpen ? <X size={20} className="text-white " /> : <Menu size={20} />}
             </Button>
           </div>
         </nav>
 
-        {/* Mobile Menu Dropdown */}
+        {/* Mobile & Medium Menu Dropdown */}
         {isMenuOpen && (
-          <div className="absolute top-20 left-0 right-0 bg-[#171717] border-b border-neutral-800 z-50 pointer-events-auto">
-            <div className="container mx-auto p-4">
-              <div className="flex flex-col space-y-4">
-                {navLinks.map((link) => (
-                  <Link
-                    key={link.title}
-                    to={link.href}
-                    className={cn(
-                      "py-2 text-neutral-300 hover:text-white border-b border-neutral-700 last:border-0",
-                      link.title === "Home" && "text-[#f0ea00]"
-                    )}
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    {link.title}
-                  </Link>
-                ))}
-
-                {/* User Account Links - Only show if authenticated */}
-                {isAuthenticated && (
-                  <div className="pt-2 space-y-2">
-                    <Link
-                      to="/profile"
-                      className="py-2 text-neutral-300 hover:text-white border-b border-neutral-700 flex items-center gap-2"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <User size={16} />
-                      <span>Profile</span>
-                    </Link>
-                    <Link
-                      to="/bookings"
-                      className="py-2 text-neutral-300 hover:text-white border-b border-neutral-700 flex items-center gap-2"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <Calendar size={16} />
-                      <span>My Bookings</span>
-                    </Link>
-                    <Link
-                      to="/settings"
-                      className="py-2 text-neutral-300 hover:text-white border-b border-neutral-700 flex items-center gap-2"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <Settings size={16} />
-                      <span>Settings</span>
-                    </Link>
-                    <button
-                      className="py-2 text-red-400 hover:text-red-300 w-full text-left flex items-center gap-2 border-b border-neutral-700"
-                      onClick={() => {
-                        handleLogout();
-                        setIsMenuOpen(false);
-                      }}
-                    >
-                      <LogOut size={16} />
-                      <span>Logout</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+          <div 
+            ref={menuRef}
+            className="absolute top-24 right-4 w-56 bg-[#1a1a1a] border border-white/10 rounded-3xl z-50 pointer-events-auto shadow-lg md:right-4 lg:hidden overflow-hidden"
+          >
+            <div className="py-2 px-2">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.title}
+                  to={link.href}
+                  className={cn(
+                    "py-3 px-6 text-base text-neutral-300 hover:text-white hover:bg-[#222222] rounded-xl flex items-center block w-full text-left mb-1",
+                    link.href === location.pathname && "text-[#f0ea00] font-medium"
+                  )}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {link.title}
+                </Link>
+              ))}
             </div>
           </div>
         )}

@@ -450,35 +450,38 @@ export function TicketDetails() {
                 value={selectedSectionId}
                 onValueChange={setSelectedSectionId}
               >
-                <SelectTrigger className="w-full bg-[#2e2e2e] border-0 text-white rounded-2xl h-14 px-5">
-                  <SelectValue placeholder="Category">
-                    {selectedSectionId &&
-                    availableSections &&
-                    availableSections.length > 0
-                      ? availableSections.find(
-                          (s) => s.id === selectedSectionId
-                        )?.name
-                      : "Category"}
-                  </SelectValue>
+                <SelectTrigger className="w-full bg-[#222222] border-0 text-white rounded-2xl h-14 px-5 outline outline-white/10 outline-offset-[-1px] hover:bg-[#2a2a2a] focus:ring-0 focus:ring-offset-0">
+                  <div className="flex justify-between items-center w-full">
+                    <div className="flex items-center gap-2">
+                      <TicketIcon className="h-5 w-5 text-[#F2F900]" />
+                      <SelectValue placeholder="Category">
+                        {selectedSectionId &&
+                        availableSections &&
+                        availableSections.length > 0
+                          ? availableSections.find(
+                              (s) => s.id === selectedSectionId
+                            )?.name
+                          : "Select Category"}
+                      </SelectValue>
+                    </div>
+                  </div>
                 </SelectTrigger>
-                <SelectContent className="bg-[#2e2e2e] text-white border-[#2e2e2e]">
+                <SelectContent className="bg-[#1a1a1a] text-white border-white/10 rounded-2xl shadow-lg p-2">
                   {availableSections && availableSections.length > 0 ? (
                     availableSections.map((section) => (
                       <SelectItem
                         key={section.id}
                         value={section.id}
-                        className="hover:bg-[#3e3e3e] focus:bg-[#3e3e3e] cursor-pointer py-2"
+                        className="hover:bg-[#222222] focus:bg-[#222222] cursor-pointer py-3 px-4 rounded-xl m-1 text-neutral-300 hover:text-white data-[state=checked]:bg-[#222222] data-[state=checked]:text-[#f0ea00]"
                       >
                         <div className="flex justify-between items-center w-full">
                           <span>{section.name}</span>
-                          <span className="text-[#F2F900]">
-                            ₹{section.priceTier?.price}
-                          </span>
+                          
                         </div>
                       </SelectItem>
                     ))
                   ) : (
-                    <SelectItem value="no-categories" disabled>
+                    <SelectItem value="no-categories" disabled className="py-3 px-4 text-neutral-400">
                       No categories available
                     </SelectItem>
                   )}
@@ -488,8 +491,11 @@ export function TicketDetails() {
 
             {/* Section selection Dropdown */}
             <div className="mb-8">
-              <div className="flex items-center justify-between w-full p-4 bg-[#2e2e2e] rounded-2xl h-14 px-5">
-                <span className="text-white text-base">Select Seats</span>
+              <div className="flex items-center justify-between w-full bg-[#222222] rounded-2xl h-14 px-5 outline outline-white/10 outline-offset-[-1px]">
+                <div className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-[#F2F900]" />
+                  <span className="text-white text-base">Select Seats</span>
+                </div>
                 <div className="flex items-center gap-3">
                   <Button
                     variant="outline"
@@ -657,35 +663,38 @@ export function TicketDetails() {
                 value={selectedSectionId}
                 onValueChange={setSelectedSectionId}
               >
-                <SelectTrigger className="w-full bg-[#2e2e2e] border-0 text-white rounded-2xl h-14 px-5">
-                  <SelectValue placeholder="Category">
-                    {selectedSectionId &&
-                    availableSections &&
-                    availableSections.length > 0
-                      ? availableSections.find(
-                          (s) => s.id === selectedSectionId
-                        )?.name
-                      : "Category"}
-                  </SelectValue>
+                <SelectTrigger className="w-full bg-[#222222] border-0 text-white rounded-2xl h-14 px-5 outline outline-white/10 outline-offset-[-1px] hover:bg-[#2a2a2a] focus:ring-0 focus:ring-offset-0">
+                  <div className="flex justify-between items-center w-full">
+                    <div className="flex items-center gap-2">
+                      <TicketIcon className="h-5 w-5 text-[#F2F900]" />
+                      <SelectValue placeholder="Category">
+                        {selectedSectionId &&
+                        availableSections &&
+                        availableSections.length > 0
+                          ? availableSections.find(
+                              (s) => s.id === selectedSectionId
+                            )?.name
+                          : "Select Category"}
+                      </SelectValue>
+                    </div>
+                  </div>
                 </SelectTrigger>
-                <SelectContent className="bg-[#2e2e2e] text-white border-[#2e2e2e]">
+                <SelectContent className="bg-[#1a1a1a] text-white border-white/10 rounded-2xl shadow-lg p-2">
                   {availableSections && availableSections.length > 0 ? (
                     availableSections.map((section) => (
                       <SelectItem
                         key={section.id}
                         value={section.id}
-                        className="hover:bg-[#3e3e3e] focus:bg-[#3e3e3e] cursor-pointer py-2"
+                        className="hover:bg-[#222222] focus:bg-[#222222] cursor-pointer py-3 px-4 rounded-xl m-1 text-neutral-300 hover:text-white data-[state=checked]:bg-[#222222] data-[state=checked]:text-[#f0ea00]"
                       >
                         <div className="flex justify-between items-center w-full">
                           <span>{section.name}</span>
-                          <span className="text-[#F2F900]">
-                            ₹{section.priceTier?.price}
-                          </span>
+                          
                         </div>
                       </SelectItem>
                     ))
                   ) : (
-                    <SelectItem value="no-categories" disabled>
+                    <SelectItem value="no-categories" disabled className="py-3 px-4 text-neutral-400">
                       No categories available
                     </SelectItem>
                   )}
@@ -694,8 +703,11 @@ export function TicketDetails() {
             </div>
 
             {/* Number of Tickets */}
-            <div className="flex items-center justify-between bg-[#2e2e2e] rounded-2xl h-14 px-5">
-              <span className="text-white">Select Seats</span>
+            <div className="flex items-center justify-between bg-[#222222] rounded-2xl h-14 px-5 outline outline-white/10 outline-offset-[-1px]">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5 text-[#F2F900]" />
+                <span className="text-white">Select Seats</span>
+              </div>
               <div className="flex items-center gap-4">
                 <Button
                   variant="ghost"
