@@ -37,7 +37,7 @@ export function Navbar() {
   const { isAuthenticated, user, logout } = useAuthStore();
 
   const handleLoginClick = useCallback(() => {
-    setIsAuthModalOpen(true);
+    window.location.href = "/auth/login";
   }, []);
 
   const handleCloseModal = useCallback(() => {

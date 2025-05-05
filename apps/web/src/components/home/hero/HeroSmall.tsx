@@ -17,11 +17,11 @@ export function HeroSmall() {
             className={`${styles.heroText} flex flex-col items-center pt-8 sm:pt-12 md:pt-16 lg:pt-0`}
           >
             <div className="flex flex-col items-center">
-              <span className="text-2xl sm:text-3xl text-white font-medium mb-2 self-start">
+              <span className="text-2xl sm:text-3xl text-white font-medium mb-0 self-start">
                 welcome to the
               </span>
 
-              <h1 className="sm:text-7xl text-6xl leading-12 font-black  text-white">
+              <h1 className="sm:text-7xl text-5xl leading-12 font-black  text-white">
                 K
                 <span className="relative inline-block">
                   <span
@@ -63,7 +63,7 @@ export function HeroSmall() {
                 </span>
                 A
               </h1>
-              <div className="text-white text-2xl font-medium relative -mt-1 self-end mr-0">
+              <div className="text-white text-2xl font-medium relative -mt-3 self-end mr-0">
                 app
               </div>
             </div>

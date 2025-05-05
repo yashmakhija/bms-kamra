@@ -125,7 +125,7 @@ export function Login() {
             <div className="text-center">
               <p className="text-white/60 text-sm">
                 Don't have an account?{" "}
-                <Link to="/signup" className="text-[#f2f900] hover:text-[#f2f900]/80 transition-colors">
+                <Link to="/auth/signup" className="text-[#f2f900] hover:text-[#f2f900]/80 transition-colors">
                   Sign up
                 </Link>
               </p>
