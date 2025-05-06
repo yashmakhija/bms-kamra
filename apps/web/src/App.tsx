@@ -19,6 +19,7 @@ import ComingSoon from "./components/comingSoon";
 import { BookingsPage } from "./pages/bookings";
 import { LoginPage } from "./pages/auth/login";
 import { SignupPage } from "./pages/auth/signup";
+import Privacy from "./pages/privacy";
 // Layout component to conditionally render navbar and footer
 function AppLayout() {
   const location = useLocation();
@@ -106,6 +107,7 @@ function AppLayout() {
         <Route path="/auth/signup" element={<SignupPage />} />
         <Route path="/login" element={<Navigate to="/auth/login" replace />} />
         <Route path="/signup" element={<Navigate to="/auth/signup" replace />} />
+        <Route path="/privacy" element={<Privacy />} />
         {/* Fallback route */}
         <Route path="*" element={<ErrorPage />} />
       </Routes>
