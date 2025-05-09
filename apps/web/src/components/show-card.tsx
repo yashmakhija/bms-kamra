@@ -40,35 +40,25 @@ export function ShowCard({
 
   return (
     <div
-      className={cn(
-        "relative group w-full shrink-0 cursor-pointer px-2 rounded-[20.12px]",
-        "sm:min-w-[55vw] md:min-w-[300px] md:w-full md:px-0", // Adjusted width for better mobile view
-        className
-      )}
+      className={cn("group cursor-pointer ", className)}
       onClick={handleClick}
       {...props}
     >
-      <div className="overflow-hidden rounded-xl bg-neutral-800 aspect-video max-w-[500px] mx-auto">
-        <img
-          src={image}
-          alt={title}
-          width={width || 400}
-          height={height || 225}
-          className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
-        />
-      </div>
-      <div className="mt-3 space-y-1 max-w-[500px] mx-auto">
-        <h3
-          className="font-medium text-neutral-50 text-base sm:text-lg md:text-lg leading-tight line-clamp-2 cursor-pointer"
-          onClick={handleClick}
-        >
-          {title}
-        </h3>
-        {artist && (
-          <p className="text-neutral-400 text-sm md:text-sm line-clamp-1">
-            {artist}
+      <div className="bg-[#1D1D1D] w-full rounded-[32px] p-4 flex flex-col">
+        <div className="relative w-full rounded-[24px] overflow-hidden mb-4">
+          <img
+            src={image}
+            alt={title}
+            className="self-stretch  relative rounded-[20px] object-cover"
+          />
+        </div>
+
+        {/* Text Container */}
+        <div className="bg-[#2E2E2E] self-stretch  p-3  rounded-2xl inline-flex justify-start items-start gap-2.5 ">
+          <p className="text-base mb-5 font-medium leading-snug text-white">
+            {title}
           </p>
-        )}
+        </div>
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ const links = [
 export function Navigate() {
   return (
     <div className="space-y-6 ">
-      <h3 className="text-white text-lg font-medium">Quick Links</h3>
+      <h3 className="text-white text-lg font-medium">Navigate</h3>
       <nav className="space-y-4">
         {links.map(({ href, label }) => (
           <a

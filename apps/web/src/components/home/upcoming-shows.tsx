@@ -10,6 +10,7 @@ import {
   AlertCircle,
   Loader2,
   ArrowRight,
+  ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@repo/ui/utils";
 import { useNavigate } from "react-router-dom";
@@ -48,81 +49,71 @@ interface ShowCardProps {
 function ShowCard({ show, onClick, isSelected, isLoading }: ShowCardProps) {
   const handleBookNow = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Navigate to booking page
     window.location.href = `/shows/${show.id}`;
   };
 
   return (
-    <div className="bg-neutral-800 rounded-[20px] p-6 text-white w-90 h-105 aspect-[1/1.4] flex flex-col">
-      <div className="h-[4.5rem] flex items-start">
-        <h2 className="text-lg text-white font-bold line-clamp-3 leading-tight">
+    <div className="bg-[#1D1D1D] w-90 rounded-[32px] p-6 text-white flex flex-col">
+      {/* Title and Description */}
+      <div className="space-y-3 mb-8">
+        <h2 className="text-lg self-stretch font-bold text-[#f1f1f1] leading-relaxed">
           {show.title}
         </h2>
+        <p className="text-[#f1f1f1]/70 justify-center  text-sm font-normal leading-tight line-clamp-2">
+          {show.description}
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-y-5 flex-grow mt-3">
-        <InfoItem
-          icon={<Calendar size={20} strokeWidth={1.5} />}
-          label="Date"
-          value={show.date}
-        />
-        <InfoItem
-          icon={<Timer size={20} strokeWidth={1.5} />}
-          label="Duration"
-          value={show.duration}
-        />
-        <InfoItem
-          icon={<Clock size={20} strokeWidth={1.5} />}
-          label="Time"
-          value={show.time}
-        />
-        <InfoItem
-          icon={<MapPin size={20} strokeWidth={1.5} />}
-          label="Venue"
-          value={show.venue}
-        />
+      {/* Event Details - Vertical Stack */}
+      <div className="space-y-5 self-stretch ">
+        <div className="flex items-center gap-4">
+          <div className="text-[#F2F900]">
+            <Calendar size={20} strokeWidth={1.5} />
+          </div>
+          <p className="text-sm text-white">{show.date}</p>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="text-[#F2F900]">
+            <Timer size={20} strokeWidth={1.5} />
+          </div>
+          <p className="text-sm text-white">{show.duration}</p>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="text-[#F2F900]">
+            <Clock size={20} strokeWidth={1.5} />
+          </div>
+          <p className="text-sm text-white">{show.time}</p>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="text-[#F2F900]">
+            <MapPin size={20} strokeWidth={1.5} />
+          </div>
+          <p className="text-sm text-white">{show.venue}</p>
+        </div>
       </div>
 
-      {/* Dotted line separator - fixed position */}
-      <div className="h-[30px] mt-5 mb-4 relative">
-        <div className="absolute top-1/2 -translate-y-1/2 left-[-24px] right-[-24px] h-1 flex items-center">
-          {/* Left Edge Circle */}
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-[#171717] rounded-full z-10" />
-
-          {/* Dotted Line */}
-          <div className="w-full flex justify-between items-center px-6">
-            {Array.from({ length: 14 }).map((_, i) => (
-              <div
-                key={i}
-                className={cn(
-                  "h-[2.5px] rounded-full bg-neutral-900",
-                  i % 3 === 1 ? "w-4" : "w-2"
-                )}
-              />
-            ))}
+      {/* Price and Action Section */}
+      <div className="mt-auto pt-6">
+        <div className="bg-[#2e2e2e] rounded-3xl border-t border-[#04021b]/10 p-4 flex items-start justify-between">
+          <div>
+            <p className="text-[#F2F900] text-2xl font-bold leading-normal justify-center">
+              ₹{show.price.amount.toLocaleString()}
+            </p>
+            <p className="text-[#F1F1F1] text-xs font-normal leading-none">
+              onwards
+            </p>
           </div>
 
-          {/* Right Edge Circle */}
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-3.5 h-3.5 bg-[#171717] rounded-full z-10" />
+          <button
+            onClick={handleBookNow}
+            className="bg-[#f2f900] cursor-pointer w-11 self-stretch p-2 h-12 rounded-[64px] inline-flex justify-center items-center gap-2.5 transition-colors"
+          >
+            <ArrowUpRight className="w-6 h-6 text-black" />
+          </button>
         </div>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col">
-          <p className="text-2xl text-neutral-50 font-bold leading-normal">
-            ₹{show.price.amount.toLocaleString()}
-          </p>
-          <p className="text-[10px] font-normal text-neutral-400 leading-3">
-            onwards
-          </p>
-        </div>
-
-        <Button
-          onClick={handleBookNow}
-          className="inline-flex cursor-pointer items-center justify-center bg-[#e31001] hover:bg-[#D00000] text-neutral-50 text-sm leading-none font-medium rounded-xl gap-2 overflow-hidden min-w-[110px] h-[40px] px-6 py-3"
-        >
-          Book Now
-        </Button>
       </div>
     </div>
   );
@@ -199,7 +190,7 @@ export function UpcomingShows({
   if (isLoading && shows.length === 0) {
     return (
       <section
-        className={cn("w-full py-24 bg-[#171717] text-center", className)}
+        className={cn("w-full py-24 bg-[#111111] text-center", className)}
       >
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center">
@@ -215,7 +206,7 @@ export function UpcomingShows({
   if (isError) {
     return (
       <section
-        className={cn("w-full py-24 bg-[#171717] text-center", className)}
+        className={cn("w-full py-24 bg-[#111111] text-center", className)}
       >
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center">
@@ -233,7 +224,7 @@ export function UpcomingShows({
   if (shows.length === 0) {
     return (
       <section
-        className={cn("w-full py-24 bg-[#171717] text-center", className)}
+        className={cn("w-full py-24 bg-[#111111] text-center", className)}
       >
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-center">
@@ -248,17 +239,24 @@ export function UpcomingShows({
   }
 
   return (
-    <section className={cn("w-full bg-[#171717]", className)}>
+    <section className={cn("w-full bg-[#111111]", className)}>
       <div className="container mx-auto px-4 md:px-8 lg:px-30">
         <div className="flex justify-between items-center mb-8">
-          <div className="text-white text-3xl font-bold leading-10">
+          <div
+            className={cn(
+              "font-bold leading-10",
+              title === "Tickets" || title === "Similar Shows"
+                ? "text-[#F2F900] text-4xl"
+                : "text-white text-3xl"
+            )}
+          >
             {title}
           </div>
 
           {/* Only show browse all button when removeButton is false */}
           {!removeButton && (
             <div className="hidden md:block">
-              <Button className="bg-neutral-50 text-neutral-900 text-sm leading-none font-medium rounded-xl gap-2 overflow-hidden min-w-[110px] h-[40px] px-6 py-4">
+              <Button className="bg-neutral-50 text-neutral-900 text-sm leading-none font-medium inline-flex justify-center rounded-[32px] gap-2 overflow-hidden min-w-[110px] h-[40px] px-6 py-2">
                 <a href="/tickets">Browse all</a>
               </Button>
             </div>
@@ -272,7 +270,7 @@ export function UpcomingShows({
                 </Button>
               )
             ) : (
-              <Button className=" bg-neutral-50 text-neutral-900 rounded-xl w-12 h-12 p-0 flex items-center justify-center">
+              <Button className="bg-white hover:bg-white/90 text-black rounded-full w-10 h-10 p-0 flex items-center justify-center">
                 <a href="/tickets">
                   <ArrowRight size={20} />
                 </a>
@@ -281,49 +279,32 @@ export function UpcomingShows({
           </div>
         </div>
 
-        {/* Mobile & Tablet View: Horizontal Scrolling */}
-        <div className="xl:hidden">
-          <div
-            ref={scrollContainerRef}
-            className="flex gap-6 overflow-x-auto pb-6 snap-x snap-mandatory"
-            style={{
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-              WebkitOverflowScrolling: "touch",
-            }}
-          >
-            {limitedShows.map((show) => (
-              <div
-                key={show.id}
-                className="flex-shrink-0 snap-start snap-always"
-                style={{
-                  width: "calc(100vw - 100px)",
-                  maxWidth: "360px",
-                  minWidth: "300px",
-                }}
-              >
-                <ShowCard
-                  show={show}
-                  isSelected={selectedShowId === show.id}
-                  isLoading={isLoading && selectedShowId === show.id}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Desktop View: 3-Column Grid */}
-        <div className="hidden xl:block">
-          <div className="grid grid-cols-3 gap-19">
-            {limitedShows.map((show) => (
+        {/* Horizontal Scrolling for All Screen Sizes */}
+        <div
+          ref={scrollContainerRef}
+          className="flex gap-6 overflow-x-auto pb-6 snap-x snap-mandatory scroll-pl-6"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          {limitedShows.map((show) => (
+            <div
+              key={show.id}
+              className="flex-shrink-0 snap-start snap-always"
+              style={{
+                width: "min(calc(100vw - 100px), 360px)",
+                minWidth: "300px",
+              }}
+            >
               <ShowCard
-                key={show.id}
                 show={show}
                 isSelected={selectedShowId === show.id}
                 isLoading={isLoading && selectedShowId === show.id}
               />
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>

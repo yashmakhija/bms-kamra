@@ -1,0 +1,17 @@
+# Logs
+logs/
+*.log
+
+# Build directory
+dist/
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Turbo
+.turbo/
+
+# Dependencies
+node_modules/ 

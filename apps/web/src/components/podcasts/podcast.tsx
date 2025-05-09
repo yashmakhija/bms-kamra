@@ -1,11 +1,8 @@
 "use client";
 
-import { useRef, useEffect } from "react";
 import { ShowCard } from "../show-card";
 import { cn } from "@repo/ui/utils";
 import { create } from "zustand";
-import { ArrowRight } from "lucide-react";
-import { Button } from "@repo/ui/components/ui/button";
 
 interface LatestShow {
   id: string;
@@ -28,14 +25,18 @@ const useScrollStore = create<ScrollState>((set) => ({
 }));
 
 interface LatestUploadsProps {
+  title: string;
   shows: LatestShow[];
   className?: string;
 }
 
-export function Podcast({ shows, className }: LatestUploadsProps) {
+export function Podcast({ title, shows, className }: LatestUploadsProps) {
   return (
-    <section className={cn("w-full py-12 bg-[#171717]", className)}>
+    <section className={cn("w-full py-12 bg-[#111111] ", className)}>
       <div className="container mx-auto px-4 md:px-8 lg:px-30">
+        <h2 className="justify-center text-white text-4xl font-bold leading-10 mb-4">
+          {title}
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8 lg:gap-12">
           {shows.map((show) => (
             <div

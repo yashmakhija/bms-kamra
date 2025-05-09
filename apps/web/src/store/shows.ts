@@ -9,6 +9,7 @@ interface ExtendedApiShow extends ApiShow {
 
 export interface Show {
   id: string;
+  description: string;
   title: string;
   date: string;
   time: string;
@@ -58,6 +59,7 @@ const transformApiShow = (apiShow: ExtendedApiShow): Show => {
   return {
     id: apiShow.id,
     title: apiShow.title,
+    description: apiShow.description || "",
     date: new Date(futureDate).toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
@@ -124,7 +126,7 @@ export const useShowsStore = create<ShowsState>((set, get) => ({
     return showToTicketMap[showId] || ticketData.id;
   },
 
-  getShowById: async (id: string) => {
+  getShowById: async (id: string): Promise<Show> => {
     try {
       set({ isLoading: true, isError: false, errorMessage: null });
       const showData = await apiClient.getShowById(id);
@@ -133,15 +135,15 @@ export const useShowsStore = create<ShowsState>((set, get) => ({
       set((state) => {
         const existingShowIndex = state.shows.findIndex((s) => s.id === id);
         if (existingShowIndex === -1) {
-          return { shows: [...state.shows, showData] };
+          return { shows: [...state.shows, showData as unknown as Show] };
         }
         // If show already exists, update it
         const updatedShows = [...state.shows];
-        updatedShows[existingShowIndex] = showData;
+        updatedShows[existingShowIndex] = showData as unknown as Show;
         return { shows: updatedShows };
       });
 
-      return showData;
+      return showData as unknown as Show;
     } catch (error) {
       console.error("Error fetching show by ID:", error);
       set({

@@ -66,7 +66,7 @@ export function PaymentProcessingPage() {
   };
 
   return (
-    <div className="container max-w-3xl mx-auto p-4 flex flex-col items-center justify-center min-h-[80vh]">
+    <div className=" w-full bg-[#111111] p-4 flex flex-col items-center justify-center min-h-[80vh]">
       {bookingId && (
         <PaymentModal
           isOpen={isModalOpen}

@@ -78,7 +78,7 @@ export function AboutMe({}: AboutMeProps) {
   }, []);
 
   return (
-    <section className="w-full py-16 md:py-20 bg-neutral-900">
+    <section className="w-full py-16 md:py-20 bg-[#111111]">
       <div className="container mx-auto px-6">
         {/* Title with lines for all screen sizes - wider lines on larger screens */}
         <div className="flex items-center justify-center mb-12 md:mb-10">
