@@ -23,6 +23,7 @@
   "scripts": {
     "build": "tsc",
     "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push --skip-generate",
     "db:studio": "prisma studio",
     "db:seed": "ts-node prisma/seed.ts",

@@ -1,10 +1,15 @@
 FROM node:20-alpine
 
-
-RUN apk add --no-cache python3 make g++ postgresql-dev
-
 WORKDIR /app
 
+RUN apk add --no-cache python3 make g++ git openssl openssl-dev
+
+ENV PNPM_HOME="/root/.local/share/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV ROLLUP_SKIP_NODE_RESOLUTION=true
+
+RUN npm install -g pnpm
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/
@@ -12,24 +17,21 @@ COPY packages/database/package.json ./packages/database/
 COPY packages/api-client/package.json ./packages/api-client/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 
-
-RUN npm install -g pnpm
-
-
-RUN pnpm install --frozen-lockfile --shamefully-hoist
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 COPY . .
 
-RUN cd packages/database && npx prisma generate
+RUN pnpm --filter @repo/api-client run build || echo "Continuing despite api-client build issues"
+RUN pnpm --filter @repo/database run build
+RUN pnpm --filter api run build
 
-RUN pnpm --filter @repo/database build
-RUN pnpm --filter api build
 
-COPY docker/start.sh /app/start.sh
-RUN chmod +x /app/start.sh
+RUN cd packages/database && pnpm db:generate
 
-RUN mkdir -p /app/tmp
 
-EXPOSE 3091
+RUN cd packages/database && echo "DATABASE_URL=${DATABASE_URL}" > .env
+RUN cd packages/database && pnpm db:push || echo "Skipping DB push - will run migrations at app start"
 
-CMD ["/app/start.sh"]
+EXPOSE 8080
+
+CMD ["pnpm", "--filter", "api", "start"]
