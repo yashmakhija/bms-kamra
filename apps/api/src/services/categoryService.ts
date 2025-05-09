@@ -115,7 +115,7 @@ export const getCategoriesByType = async (
   try {
     return prisma.category.findMany({
       where: {
-        type,
+        type: CategoryType[type],
         ...(isActive ? { isActive: true } : {}),
       },
       orderBy: { name: "asc" },
@@ -134,12 +134,14 @@ export const getDefaultCategoryByType = async (type: keyof typeof CategoryType) 
   try {
     // Find existing category of the specified type
     let category = await prisma.category.findFirst({
-      where: { type, isActive: true },
+      where: { type: CategoryType[type], isActive: true },
     });
 
     // If no category exists with this type, create one using our defaults
     if (!category) {
-      const defaultCategory = DEFAULT_CATEGORIES.find((c) => c.type === type);
+      const defaultCategory = DEFAULT_CATEGORIES.find(
+        (c) => c.type === CategoryType[type]
+      );
       if (!defaultCategory) {
         throw new Error(`No default configuration for category type: ${type}`);
       }
@@ -172,7 +174,7 @@ export const createCategory = async (data: {
   try {
     // First check if a category with this type already exists
     const existingCategory = await prisma.category.findFirst({
-      where: { type: data.type, isActive: true },
+      where: { type: CategoryType[data.type], isActive: true },
     });
 
     if (existingCategory) {
@@ -181,7 +183,10 @@ export const createCategory = async (data: {
     }
 
     return prisma.category.create({
-      data,
+      data: {
+        ...data,
+        type: CategoryType[data.type],
+      },
     });
   } catch (error) {
     logger.error("Error creating category", { error, data });
@@ -205,7 +210,10 @@ export const updateCategory = async (
   try {
     return prisma.category.update({
       where: { id },
-      data,
+      data: {
+        ...data,
+        ...(data.type ? { type: CategoryType[data.type] } : {}),
+      },
     });
   } catch (error) {
     logger.error(`Error updating category: ${id}`, { error, data });

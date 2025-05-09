@@ -61,11 +61,13 @@ The API follows a robust layered architecture:
 
 - **Razorpay Integration**:
 
+  - Singleton client pattern for consistent API interaction
+  - Type-safe payment processing with proper interfaces
   - Secure payment flow with order creation and verification
   - Cryptographic signature validation for transactions
   - Webhook processing for automated payment status updates
   - Payment metadata and tracking for reconciliation
-  - Refund processing with booking status synchronization
+  - Comprehensive refund processing with full audit trail
 
 - **Transaction Safety**:
   - Atomic database transactions for payment-related operations
@@ -112,8 +114,10 @@ The database schema is designed for performance and integrity:
 
 - **Core Entities**: Users, Venues, Shows, Events, Showtimes, Tickets, Bookings
 - **Supporting Entities**: Categories, PriceTiers, SeatSections, PaymentRecords
+- **Booking Entity**: Enhanced with dedicated refund fields (refundId, refundDate, refundReason, refundedBy) for comprehensive payment lifecycle management
 - **Relationship Optimization**: Strategic use of indexes and foreign keys
 - **Data Integrity**: Transaction-based operations for related data
+- **Enums as Constants**: BookingStatus, PaymentMethod, and other enums are exported as constant values for consistent usage across the application
 
 ### Caching Strategy
 
@@ -213,7 +217,7 @@ Authentication tokens (JWT) provide access to protected resources and include:
 
 ### Razorpay Integration
 
-The payment flow integrates Razorpay securely:
+The payment flow integrates Razorpay securely using our singleton client implementation:
 
 1. **Order Creation**:
 
@@ -236,8 +240,10 @@ The payment flow integrates Razorpay securely:
 
 4. **Refund Processing**:
    - Admin initiates refund through dashboard
-   - Server processes refund through Razorpay API
-   - Booking status updated to reflect refund
+   - Server processes refund through Razorpay API using our dedicated Razorpay client
+   - Booking updated with refund details (refundId, refundDate, refundReason, refundedBy)
+   - Tickets are automatically released back to inventory
+   - Notifications sent to user about refund status
 
 ## Development & Deployment
 
@@ -317,6 +323,7 @@ Comprehensive logging for operational visibility:
 - **Error Logging**: Detailed error tracking with stack traces
 - **Performance Logging**: Slow query and response time tracking
 - **Audit Logging**: Critical operations for security and compliance
+- **Payment Logging**: Detailed payment and refund transaction logs
 
 ### Health Monitoring
 
@@ -340,7 +347,7 @@ The API provides specialized endpoints for administrative operations:
 - Content management for shows, venues, and events
 - User management with role assignment
 - Manual booking operations (creation, modification, cancellation)
-- Payment management including refund processing
+- Payment management including refund processing with detailed tracking
 - System statistics and reporting
 
 ## Future Enhancements

@@ -7,8 +7,14 @@ services:
     environment:
       POSTGRES_PASSWORD: 'postgres'
       POSTGRES_DB: 'postgres'
+      POSTGRES_USER: 'postgres'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     
   redis:
     image: 'redis:latest'
@@ -16,6 +22,55 @@ services:
       - '6379:6379'
     volumes:
       - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    ports:
+      - '3091:3091'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      # General settings
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
+      - PORT=3091
+      
+      # Redis connection (multiple formats for compatibility)
+      - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      
+      # Bull/BullMQ specific settings
+      - BULL_REDIS_HOST=redis
+      - BULL_REDIS_PORT=6379
+      - BULL_REDIS_PASSWORD=
+      - BULL_REDIS_DB=0
+      - BULL_PREFIX=bms
+      - BULL_CONNECTION_STRING=redis://redis:6379
+      - QUEUE_PREFIX=bms
+      
+      # Additional Queue settings
+      - QUEUE_REDIS_HOST=redis
+      - QUEUE_REDIS_PORT=6379
+      - QUEUE_MAX_RETRIES=5
+      - QUEUE_RETRY_DELAY=1000
+    env_file:
+      - ./apps/api/.env
+    restart: unless-stopped
+    volumes:
+      - ./docker:/app/docker
 
 volumes:
   postgres_data:
