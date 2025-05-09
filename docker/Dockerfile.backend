@@ -1,0 +1,35 @@
+FROM node:20-alpine
+
+
+RUN apk add --no-cache python3 make g++ postgresql-dev
+
+WORKDIR /app
+
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/database/package.json ./packages/database/
+COPY packages/api-client/package.json ./packages/api-client/
+COPY packages/typescript-config/package.json ./packages/typescript-config/
+
+
+RUN npm install -g pnpm
+
+
+RUN pnpm install --frozen-lockfile --shamefully-hoist
+
+COPY . .
+
+RUN cd packages/database && npx prisma generate
+
+RUN pnpm --filter @repo/database build
+RUN pnpm --filter api build
+
+COPY docker/start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
+RUN mkdir -p /app/tmp
+
+EXPOSE 3091
+
+CMD ["/app/start.sh"]
