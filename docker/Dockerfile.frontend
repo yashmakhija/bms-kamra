@@ -15,6 +15,7 @@ RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/web/package.json ./apps/web/
 COPY packages/api-client/package.json ./packages/api-client/
+COPY packages/ui/package.json ./packages/ui/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 
 
@@ -26,6 +27,7 @@ COPY . .
 
 RUN pnpm --filter @repo/api-client build
 
+RUN cd packages/ui && pnpm add -D class-variance-authority clsx tailwind-merge
 
 RUN pnpm --filter web build
 

@@ -13,8 +13,9 @@ ENV PATH="$PNPM_HOME:$PATH"
 RUN npm install -g pnpm
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/web/package.json ./apps/web/
+COPY apps/admin-new/package.json ./apps/admin-new/
 COPY packages/api-client/package.json ./packages/api-client/
+COPY packages/ui/package.json ./packages/ui/
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 
 
@@ -26,8 +27,10 @@ COPY . .
 
 RUN pnpm --filter @repo/api-client build
 
+# Install Vite dependencies missing from the UI package 
+RUN cd packages/ui && pnpm add -D class-variance-authority clsx tailwind-merge
 
-RUN pnpm --filter admin-new build
+RUN pnpm --filter admin-dashboard build
 
 
 FROM nginx:alpine AS production

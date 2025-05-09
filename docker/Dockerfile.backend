@@ -9,6 +9,10 @@ ENV PATH="$PNPM_HOME:$PATH"
 ENV NODE_OPTIONS="--max-old-space-size=4096"
 ENV ROLLUP_SKIP_NODE_RESOLUTION=true
 
+# Add build arguments with defaults
+ARG DATABASE_URL="postgresql://kunalkamara:thisiskunalkamra@postgres:5432/kanal-ticket"
+ENV DATABASE_URL=${DATABASE_URL}
+
 RUN npm install -g pnpm
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -21,16 +25,21 @@ RUN pnpm install --frozen-lockfile --ignore-scripts
 
 COPY . .
 
+# First generate Prisma client before building dependencies
+RUN cd packages/database && echo "DATABASE_URL=${DATABASE_URL}" > .env && pnpm db:generate
+
+# Now build packages in the correct order
 RUN pnpm --filter @repo/api-client run build || echo "Continuing despite api-client build issues"
 RUN pnpm --filter @repo/database run build
 RUN pnpm --filter api run build
 
-
-RUN cd packages/database && pnpm db:generate
-
-
-RUN cd packages/database && echo "DATABASE_URL=${DATABASE_URL}" > .env
-RUN cd packages/database && pnpm db:push || echo "Skipping DB push - will run migrations at app start"
+# Set up database connection for schema push - only if DATABASE_URL is set
+RUN cd packages/database && \
+    if [ -n "${DATABASE_URL}" ]; then \
+      pnpm db:push || echo "Skipping DB push - will run migrations at app start"; \
+    else \
+      echo "DATABASE_URL not set, skipping db:push"; \
+    fi
 
 EXPOSE 8080
 
