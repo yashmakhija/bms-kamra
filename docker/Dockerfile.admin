@@ -27,13 +27,13 @@ COPY . .
 RUN pnpm --filter @repo/api-client build
 
 
-RUN pnpm --filter web build
+RUN pnpm --filter admin-new build
 
 
 FROM nginx:alpine AS production
 
 
-COPY --from=builder /app/apps/web/dist /usr/share/nginx/html
+COPY --from=builder /app/apps/admin-new/dist /usr/share/nginx/html
 
 RUN echo 'server { \
     listen 80; \
