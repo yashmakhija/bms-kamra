@@ -1,0 +1,78 @@
+name: Build and Deploy BMS-Kamra
+
+on:
+  push:
+    branches:
+      - main  # For staging
+      - production  # For production
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        app: [frontend, backend, admin]
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Set environment variables
+        id: vars
+        run: |
+          if [[ $GITHUB_REF == 'refs/heads/main' ]]; then
+            echo "ENVIRONMENT=Production" >> $GITHUB_ENV
+            echo "TAG=latest" >> $GITHUB_ENV
+          elif [[ $GITHUB_REF == 'refs/heads/production' ]]; then
+            echo "ENVIRONMENT=Production" >> $GITHUB_ENV
+            echo "TAG=stable" >> $GITHUB_ENV
+          fi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+        with:
+          driver-opts: |
+            image=moby/buildkit:buildx-stable-1
+            network=host
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./docker/Dockerfile.${{ matrix.app }}
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            yashmakhija/kunal-kamra-${{ matrix.app }}:${{ env.TAG }}
+          platforms: linux/amd64
+          build-args: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+
+      - name: Checkout deployment repo
+        uses: actions/checkout@v3
+        with:
+          repository: code100x/staging-ops
+          token: ${{ secrets.REPO_TOKEN }}
+          path: staging-ops
+
+      - name: Update Kubernetes manifests
+        working-directory: staging-ops
+        run: |
+          # Update image tag in deployment.yml
+          sed -i "s|image: yashmakhija/kunal-kamra-${{ matrix.app }}:.*|image: yashmakhija/kunal-kamra-${{ matrix.app }}:${{ env.TAG }}|" ${{ env.ENVIRONMENT }}/bms-kamra/${{ matrix.app }}.yml
+          
+          # Configure Git
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "github-actions@github.com"
+          
+          # Commit and push the changes
+          git add .
+          git commit -m "Update bms-kamra ${{ matrix.app }} image to ${{ env.TAG }} in ${{ env.ENVIRONMENT }}" || echo "No changes to commit"
+          git push || (git pull --rebase && git push) 

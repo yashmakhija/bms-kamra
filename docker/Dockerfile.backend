@@ -41,6 +41,11 @@ RUN cd packages/database && \
       echo "DATABASE_URL not set, skipping db:push"; \
     fi
 
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD wget --quiet --tries=1 --spider http://localhost:8080/health || exit 1
+
 EXPOSE 8080
 
-CMD ["pnpm", "--filter", "api", "start"]
+# Start the application with environment variables
+CMD ["sh", "-c", "echo \"DATABASE_URL=${DATABASE_URL}\" > .env && pnpm --filter api start"]
